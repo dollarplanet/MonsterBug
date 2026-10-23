@@ -68,6 +68,9 @@ function Game:render()
 	self.slot_hits = {}
 	self.card_views = {}
 	self.card_order = {}
+	self.monster_node = nil
+	self.monster_x = nil
+	self.monster_y = nil
 	self.drag = nil
 	self.press = nil
 	self.last_tap = nil
@@ -266,16 +269,28 @@ function Game:find_hand(uid)
 	return nil
 end
 
+local function contains_card(view, x, y)
+	local r = view.rect
+	local cx = r.x + r.w / 2
+	local cy = r.y + r.h / 2
+	local a = -math.rad(view.rotation or 0)
+	local dx = x - cx
+	local dy = y - cy
+	local lx = dx * math.cos(a) - dy * math.sin(a)
+	local ly = dx * math.sin(a) + dy * math.cos(a)
+	return math.abs(lx) <= r.w / 2 and math.abs(ly) <= r.h / 2
+end
+
 function Game:card_at(x, y)
 	if self.selected_uid then
 		local selected = self.card_views[self.selected_uid]
-		if selected and W.contains(selected.rect, x, y) then
+		if selected and contains_card(selected, x, y) then
 			return selected
 		end
 	end
 	for i = #self.card_order, 1, -1 do
 		local view = self.card_order[i]
-		if view.uid ~= self.selected_uid and W.contains(view.rect, x, y) then
+		if view.uid ~= self.selected_uid and contains_card(view, x, y) then
 			return view
 		end
 	end
@@ -795,6 +810,9 @@ end
 
 function update(self, dt)
 	self.now = (self.now or 0) + dt
+	if self.screen == "battle" then
+		B.update_monster_idle(self, self.now)
+	end
 	if self.update_toast then
 		self:update_toast(dt)
 	end

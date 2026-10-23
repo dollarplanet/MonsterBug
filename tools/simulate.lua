@@ -561,7 +561,8 @@ local function test_weapon_marks()
 	local ok = combat.play(run, c, hammer.uid, 1)
 	assert(ok, "target weapon play failed")
 	assert(c.slots[1].weapon and c.slots[1].weapon.card == "StoneHammer", "target weapon mark missing")
-	assert(c.slots[1].weapon.angle >= -45 and c.slots[1].weapon.angle <= 45, "target angle out of range")
+	assert(math.abs(c.slots[1].weapon.angle) >= 20 and math.abs(c.slots[1].weapon.angle) <= 45,
+		"target angle out of range")
 
 	local shield = add_inst(run, "WoodenShield", "hand")
 	c.actions = 3
@@ -584,7 +585,7 @@ local function test_weapon_marks()
 
 	local seen = {}
 	for _, mark in ipairs(c.monster_cards) do
-		assert(mark.angle >= -45 and mark.angle <= 45, "monster angle out of range")
+		assert(math.abs(mark.angle) >= 20 and math.abs(mark.angle) <= 45, "monster angle out of range")
 		assert(not seen[mark.angle], "duplicate monster card angle")
 		seen[mark.angle] = true
 	end

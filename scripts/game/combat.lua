@@ -15,25 +15,32 @@ local function angle_for(seed)
 	for i = 1, #seed do
 		h = (h * 33 + string.byte(seed, i)) % 1000003
 	end
-	return h % 91 - 45
+	local magnitude = 20 + h % 26
+	local sign = math.floor(h / 26) % 2 == 0 and -1 or 1
+	return sign * magnitude
 end
 
 local function unique_angle(seed, used)
 	local angle = angle_for(seed)
+	local magnitude = math.abs(angle)
+	local sign = angle < 0 and -1 or 1
 	local guard = 0
-	while used[angle] and guard < 91 do
-		angle = angle + 1
-		if angle > 45 then
-			angle = -45
+	while used[angle] and guard < 52 do
+		magnitude = magnitude + 1
+		if magnitude > 45 then
+			magnitude = 20
+			sign = -sign
 		end
+		angle = sign * magnitude
 		guard = guard + 1
 	end
 	return angle
 end
 
 local function clamp_angle(value)
-	value = tonumber(value) or 0
-	return math.max(-45, math.min(45, value))
+	value = tonumber(value) or 20
+	local magnitude = math.max(20, math.min(45, math.abs(value)))
+	return value < 0 and -magnitude or magnitude
 end
 
 local function add(events, t, data)

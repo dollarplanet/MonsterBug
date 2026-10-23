@@ -76,7 +76,9 @@ local function draw_monster(app)
 	local h = info.h * scale
 	local cx = L.monster.cx
 	local cy = L.monster.top - h / 2
-	W.image(app.layer, cx, cy, w, h, info.atlas, info.anim, P.white, 2)
+	app.monster_node = W.image(app.layer, cx, cy, w, h, info.atlas, info.anim, P.white, 2)
+	app.monster_x = cx
+	app.monster_y = cy
 
 	local tier_key = def.boss and "boss" or "insect"
 	local encounter = t(app, "encounter", app.run.encounter, app.run.encounters_total or game_run.ENCOUNTERS)
@@ -147,6 +149,13 @@ local function draw_threat(app)
 	end
 end
 
+local function hand_tilt(inst)
+	local h = inst.uid * 37
+	local magnitude = 30 + h % 16
+	local sign = math.floor(h / 16) % 2 == 0 and -1 or 1
+	return sign * magnitude
+end
+
 local function draw_card(app, inst, index, pos, count)
 	local def = cards[inst.id]
 	local info = asset_map.cards[inst.id]
@@ -158,10 +167,11 @@ local function draw_card(app, inst, index, pos, count)
 	local cx = pos.x
 	local cy = L.hand.y + h / 2
 	local z = 600 + index
+	local rotation = hand_tilt(inst)
 
 	local glow = W.box(app.layer, W.rect(cx, cy, w + 16, h + 16), P.gold, z - 1)
 	gui.set_pivot(glow, gui.PIVOT_CENTER)
-	gui.set_rotation(glow, v3(0, 0, math.rad(pos.rotation)))
+	gui.set_rotation(glow, v3(0, 0, math.rad(rotation)))
 	gui.set_enabled(glow, false)
 
 	local color = P.white
@@ -171,7 +181,7 @@ local function draw_card(app, inst, index, pos, count)
 	end
 
 	local node = W.image(app.layer, cx, cy, w, h, info.atlas, info.anim, color, z)
-	gui.set_rotation(node, v3(0, 0, math.rad(pos.rotation)))
+	gui.set_rotation(node, v3(0, 0, math.rad(rotation)))
 
 	local text_color = playable and P.text or P.muted
 	local desc = i18n.card_text(app.lang, def)
@@ -187,7 +197,7 @@ local function draw_card(app, inst, index, pos, count)
 		cy = cy,
 		w = w,
 		h = h,
-		rotation = pos.rotation,
+		rotation = rotation,
 		z = z,
 		base_rect = base_rect,
 		rect = base_rect,
@@ -217,8 +227,13 @@ local function draw_weapon_marks(app, slot_layout)
 				slot.weapon.angle)
 		end
 	end
-	for _, mark in ipairs(app.combat.monster_cards or {}) do
-		draw_mark(app, mark.card, L.monster_cards.cx, L.monster_cards.y, L.monster_cards.h, mark.angle)
+	local marks = app.combat.monster_cards or {}
+	for i, mark in ipairs(marks) do
+		draw_mark(app, mark.card,
+			L.monster_cards.cx - (i - 1) * L.monster_cards.gap,
+			L.monster_cards.y,
+			L.monster_cards.h,
+			mark.angle)
 	end
 end
 
@@ -271,6 +286,17 @@ local function draw_footer(app)
 
 	W.text(app.layer, 30, L.footer.deck_label_y, t(app, "deck_hint"), "ui_14", P.muted, 525, 22)
 	W.text(app.layer, 410, L.footer.health_label_y - 4, t(app, "deck_hint2"), "ui_14", P.muted, 525, 40)
+end
+
+function B.update_monster_idle(app, time)
+	if not app.monster_node then
+		return
+	end
+	local scale = 1 + 0.012 * math.sin(time * 2)
+	local dx = 4 * math.sin(time * 0.8 + 0.4) + 2 * math.sin(time * 1.9 + 1.7)
+	local dy = 2.5 * math.sin(time * 1.1 + 0.6) + 1.5 * math.sin(time * 2.4 + 0.9)
+	gui.set_scale(app.monster_node, v3(scale, scale, 1))
+	gui.set_position(app.monster_node, v3(app.monster_x + dx, app.monster_y + dy, 0))
 end
 
 function B.render(app)

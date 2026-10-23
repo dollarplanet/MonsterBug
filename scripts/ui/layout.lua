@@ -51,6 +51,7 @@ L.monster_cards = {
 	cx = L.W - 62,
 	y = 1300,
 	h = 105,
+	gap = 80,
 }
 
 L.footer = {
