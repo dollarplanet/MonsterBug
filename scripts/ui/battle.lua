@@ -230,7 +230,7 @@ local function draw_weapon_marks(app, slot_layout)
 	local marks = app.combat.monster_cards or {}
 	for i, mark in ipairs(marks) do
 		draw_mark(app, mark.card,
-			L.monster_cards.cx - (i - 1) * L.monster_cards.gap,
+			L.monster_cards.cx + (i - 1) * L.monster_cards.gap,
 			L.monster_cards.y,
 			L.monster_cards.h,
 			mark.angle)
@@ -312,8 +312,9 @@ function B.render(app)
 
 	W.image(app.layer, 540, 960, 1080, 1920, asset_map.board.atlas, asset_map.board.anim, P.white, 1)
 	draw_monster(app)
+	local slot_layout = L.slot_layout(#app.combat.slots)
 
-	local label_r = W.rect(L.slots.label.x, L.slots.label.y - 18, 260, 44)
+	local label_r = W.rect(L.slots.label.x, (slot_layout.label_y or L.slots.label.y) - 18, 260, 44)
 	W.panel(app.layer, label_r, 80, { color = P.alpha(P.panel_dark, 0.92), border = P.gold_soft })
 	W.text(app.layer, label_r.x + 12, label_r.y + 22, t(app, "target_slots"), "ui_22", P.gold)
 
@@ -336,7 +337,6 @@ function B.render(app)
 		end
 	end
 
-	local slot_layout = L.slot_layout(#app.combat.slots)
 	for i, slot in ipairs(app.combat.slots) do
 		slot_state(app, i, slot, valid_set, slot_layout)
 	end

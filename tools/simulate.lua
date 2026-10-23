@@ -219,7 +219,10 @@ local function test_slot_layout()
 		local slots = layout.slot_layout(count)
 		assert(#slots.positions == count, "slot layout missing positions for " .. count)
 		assert(slots.w and slots.h, "slot layout missing size for " .. count)
+		assert(slots.h == layout.slots.h, "slot height shrunk for " .. count)
 	end
+	local five = layout.slot_layout(5)
+	assert(five.label_y > five.positions[1].y + five.h, "boss label overlaps top slot row")
 end
 
 local function test_i18n_encounters()

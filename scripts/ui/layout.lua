@@ -48,10 +48,10 @@ L.weapon_mark = {
 }
 
 L.monster_cards = {
-	cx = L.W - 62,
-	y = 1300,
-	h = 105,
-	gap = 80,
+	cx = 130,
+	y = 1650,
+	h = 210,
+	gap = 156,
 }
 
 L.footer = {
@@ -88,18 +88,25 @@ function L.slot_layout(count)
 		for i = 1, count do
 			positions[i] = L.slots.positions[i]
 		end
-		return { positions = positions, w = L.slots.w, h = L.slots.h }
+		return {
+			positions = positions,
+			w = L.slots.w,
+			h = L.slots.h,
+			label_y = L.slots.label.y,
+		}
 	end
+	local positions = {
+		{ x = 30, y = 1218 },
+		{ x = 560, y = 1218 },
+		{ x = 30, y = 1078 },
+		{ x = 560, y = 1078 },
+		{ x = 30, y = 938 },
+	}
 	return {
-		positions = {
-			{ x = 30, y = 1118 },
-			{ x = 560, y = 1118 },
-			{ x = 30, y = 1028 },
-			{ x = 560, y = 1028 },
-			{ x = 30, y = 938 },
-		},
+		positions = positions,
 		w = L.slots.w,
-		h = 76,
+		h = L.slots.h,
+		label_y = positions[1].y + L.slots.h + 36,
 	}
 end
 
