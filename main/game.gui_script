@@ -11,6 +11,8 @@ local run = require("scripts.game.run")
 
 local v3 = vmath.vector3
 local DOUBLE_TAP_SECONDS = 0.3
+local SELECT_SCALE = 1.07
+local SELECT_RAISE = 12
 local Game = {}
 
 local function t(self, key, ...)
@@ -265,9 +267,15 @@ function Game:find_hand(uid)
 end
 
 function Game:card_at(x, y)
+	if self.selected_uid then
+		local selected = self.card_views[self.selected_uid]
+		if selected and W.contains(selected.rect, x, y) then
+			return selected
+		end
+	end
 	for i = #self.card_order, 1, -1 do
 		local view = self.card_order[i]
-		if W.contains(view.rect, x, y) then
+		if view.uid ~= self.selected_uid and W.contains(view.rect, x, y) then
 			return view
 		end
 	end
@@ -288,13 +296,28 @@ function Game:update_card_selection()
 	if not self.card_order then
 		return
 	end
-	local top = self.card_order[#self.card_order]
+	local selected = nil
 	for _, view in ipairs(self.card_order) do
-		local selected = view.uid == self.selected_uid
-		gui.set_enabled(view.glow, selected)
-		if selected and top and top ~= view then
-			gui.move_above(view.glow, top.node)
-			gui.move_above(view.node, view.glow)
+		local is_selected = view.uid == self.selected_uid
+		local parent = (is_selected and self.card_top_layer) or self.layer
+		if parent then
+			gui.set_parent(view.glow, parent)
+			gui.set_parent(view.node, parent)
+		end
+		self:restore_card(view)
+		gui.set_enabled(view.glow, is_selected)
+		if is_selected then
+			selected = view
+		end
+	end
+	local prev = nil
+	for _, view in ipairs(self.card_order) do
+		if view ~= selected then
+			if prev then
+				gui.move_above(view.glow, prev.node)
+				gui.move_above(view.node, view.glow)
+			end
+			prev = view
 		end
 	end
 end
@@ -314,8 +337,20 @@ function Game:restore_card(view)
 	if not view then
 		return
 	end
-	gui.set_position(view.node, v3(view.cx, view.cy, 0))
-	gui.set_position(view.glow, v3(view.cx, view.cy, 0))
+	local selected = view.uid == self.selected_uid
+	local scale = selected and SELECT_SCALE or 1
+	local cy = view.cy + (selected and SELECT_RAISE or 0)
+	gui.set_position(view.node, v3(view.cx, cy, 0))
+	gui.set_position(view.glow, v3(view.cx, cy, 0))
+	gui.set_scale(view.node, v3(scale, scale, 1))
+	gui.set_scale(view.glow, v3(scale, scale, 1))
+	if selected then
+		local w = view.w * scale
+		local h = view.h * scale
+		view.rect = W.rect(view.cx - w / 2, cy - h / 2, w, h)
+	else
+		view.rect = view.base_rect
+	end
 end
 
 function Game:play_card(uid, slot_index)
@@ -641,13 +676,14 @@ function Game:on_press(x, y)
 	if self.screen == "battle" then
 		local view = self:card_at(x, y)
 		if view then
+			self:select_card(view.uid)
+			local p = gui.get_position(view.node)
 			self.drag = {
 				uid = view.uid,
 				view = view,
-				ox = view.cx - x,
-				oy = view.cy - y,
+				ox = p.x - x,
+				oy = p.y - y,
 			}
-			self:select_card(view.uid)
 		else
 			self.last_tap = nil
 		end

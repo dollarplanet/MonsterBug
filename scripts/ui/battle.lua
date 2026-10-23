@@ -177,6 +177,7 @@ local function draw_card(app, inst, index, pos, count)
 	local desc = i18n.card_text(app.lang, def)
 	W.text(node, -112, -76, desc, "ui_14", text_color, 1, 21)
 
+	local base_rect = W.rect(cx - w / 2, cy - h / 2, w, h)
 	local view = {
 		uid = inst.uid,
 		card_id = inst.id,
@@ -184,9 +185,12 @@ local function draw_card(app, inst, index, pos, count)
 		glow = glow,
 		cx = cx,
 		cy = cy,
+		w = w,
+		h = h,
 		rotation = pos.rotation,
 		z = z,
-		rect = W.rect(cx - w / 2, cy - h / 2, w, h),
+		base_rect = base_rect,
+		rect = base_rect,
 	}
 	app.card_views[inst.uid] = view
 	app.card_order[#app.card_order + 1] = view
@@ -289,6 +293,7 @@ function B.render(app)
 	draw_hand(app)
 	draw_footer(app)
 	draw_top(app)
+	app.card_top_layer = W.layer(app.layer, 0)
 
 	app:update_card_selection()
 end
