@@ -26,6 +26,12 @@ local function type_color(need)
 	return P.type[need] or { bg = P.panel_soft, border = P.border, text = P.text }
 end
 
+local function draw_board(app)
+	local k = math.max(L.W / L.DESIGN_W, L.H / L.DESIGN_H)
+	W.image(app.layer, L.W / 2, L.H / 2, L.DESIGN_W * k, L.DESIGN_H * k,
+		asset_map.board.atlas, asset_map.board.anim, P.white, 1)
+end
+
 local function slot_state(app, index, slot, valid_set, layout)
 	local pos = layout.positions[index]
 	local r = W.rect(pos.x, pos.y, layout.w, layout.h)
@@ -241,7 +247,7 @@ local function draw_hand(app)
 	local hand = app.run.hand or {}
 	local positions = L.hand_positions(#hand)
 	local label = t(app, "hand", app.combat.actions, #hand)
-	W.text(app.layer, L.hand.margin, L.hand.label_y, label, "ui_22", P.gold, 590, 60)
+	W.text(app.layer, L.hand.left, L.hand.label_y, label, "ui_22", P.gold, 590, 60)
 
 	for i, inst in ipairs(hand) do
 		draw_card(app, inst, i, positions[i], #hand)
@@ -260,9 +266,10 @@ local function draw_hand(app)
 			local name = def and def.name or tostring(inst.id)
 			local mode = def and combat.target_mode(def, app.combat) or "none"
 			local hint_key = mode == "none" and "hint_play" or "hint_battle"
-			local prompt_r = W.rect(30, 632, 1020, 44)
+			local prompt_w = L.W - L.safe.left - L.safe.right - 60
+			local prompt_r = W.rect(L.safe.left + 30, 632 + L.safe.bottom, prompt_w, 44)
 			W.panel(app.layer, prompt_r, 592, { color = P.alpha(P.teal, 0.94), border = P.teal_bright })
-			W.text(app.layer, 48, prompt_r.y + 22, name .. "  ·  " .. t(app, hint_key), "ui_18", P.teal_text, 594, 70)
+			W.text(app.layer, prompt_r.x + 18, prompt_r.y + 22, name .. "  ·  " .. t(app, hint_key), "ui_18", P.teal_text, 594, 70)
 		end
 	end
 end
@@ -284,8 +291,8 @@ local function draw_footer(app)
 	W.text(app.layer, hr.x + 18, hr.y + hr.h / 2, t(app, "health_total"), "ui_18", P.text, 522)
 	W.text(app.layer, hr.x + hr.w - 170, hr.y + hr.h / 2, string.format("%d / %d", health, max_hp), "ui_28", P.text, 522)
 
-	W.text(app.layer, 30, L.footer.deck_label_y, t(app, "deck_hint"), "ui_14", P.muted, 525, 22)
-	W.text(app.layer, 410, L.footer.health_label_y - 4, t(app, "deck_hint2"), "ui_14", P.muted, 525, 40)
+	W.text(app.layer, L.footer.deck.x, L.footer.deck_label_y, t(app, "deck_hint"), "ui_14", P.muted, 525, 22)
+	W.text(app.layer, L.footer.health.x, L.footer.health_label_y - 4, t(app, "deck_hint2"), "ui_14", P.muted, 525, 40)
 end
 
 function B.update_monster_idle(app, time)
@@ -310,7 +317,7 @@ function B.render(app)
 		return
 	end
 
-	W.image(app.layer, 540, 960, 1080, 1920, asset_map.board.atlas, asset_map.board.anim, P.white, 1)
+	draw_board(app)
 	draw_monster(app)
 	local slot_layout = L.slot_layout(#app.combat.slots)
 

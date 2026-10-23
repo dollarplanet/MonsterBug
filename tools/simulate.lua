@@ -225,6 +225,73 @@ local function test_slot_layout()
 	assert(five.label_y > five.positions[1].y + five.h, "boss label overlaps top slot row")
 end
 
+local function test_layout_viewport()
+	local function near(a, b)
+		assert(math.abs(a - b) < 0.01, string.format("expected %.2f got %.2f", b, a))
+	end
+
+	layout.configure(1080, 1920, {})
+	near(layout.scale, 1)
+	near(layout.W, 1080)
+	near(layout.H, 1920)
+	near(layout.hand.left, 40)
+	near(layout.hand.right, 1040)
+	assert(layout.slot_layout(5).h == 120, "slot height changed at design size")
+
+	layout.configure(1080, 2400, {})
+	near(layout.scale, 1)
+	near(layout.W, 1080)
+	near(layout.H, 2400)
+	near(layout.top.name.y, 2268)
+	near(layout.hand.y, 172)
+	near(layout.card_preview.image.cy, 1280)
+	near(layout.extra_y, 480)
+
+	layout.configure(1440, 2560, {})
+	near(layout.scale, 4 / 3)
+	near(layout.W, 1080)
+	near(layout.H, 1920)
+	near(layout.ox, 0)
+	near(layout.extra_y, 0)
+
+	layout.configure(1200, 1920, {})
+	near(layout.scale, 1)
+	near(layout.W, 1200)
+	near(layout.H, 1920)
+	near(layout.ox, 60)
+	near(layout.slots.positions[1].x, 90)
+	near(layout.threat.w, 1140)
+	near(layout.footer.health.x, 530)
+
+	layout.configure(1080, 2340, {
+		inset_left = 0,
+		inset_right = 0,
+		inset_top = 80,
+		inset_bottom = 48,
+	})
+	near(layout.scale, 1)
+	near(layout.W, 1080)
+	near(layout.H, 2340)
+	near(layout.safe.top, 80)
+	near(layout.safe.bottom, 48)
+	near(layout.top.name.y, 2128)
+	near(layout.monster.top, 2128)
+	near(layout.slots.positions[1].y, 1126)
+	local boss_layout = layout.slot_layout(5)
+	near(boss_layout.positions[1].y, 1266)
+	near(boss_layout.positions[5].y, 986)
+	near(boss_layout.label_y, 1422)
+	near(layout.hand.y, 220)
+	near(layout.threat.y, 736)
+	near(layout.threat.y + layout.threat.h, 908)
+	near(layout.monster_cards.y, 1990)
+	near(layout.card_preview.image.cy, 1250)
+	assert(layout.threat.y + layout.threat.h <= boss_layout.positions[5].y, "threat overlaps bottom slot row")
+	assert(layout.hand.label_y <= boss_layout.positions[5].y, "slots overlap hand")
+
+	layout.reset()
+end
+
 local function test_i18n_encounters()
 	assert(i18n.text("en", "encounter", 8, 8):find("8/8"), "English encounter total missing")
 	assert(i18n.text("id", "stats", 8, 8, 5, 20):find("8/8"), "Indonesian stats total missing")
@@ -618,6 +685,7 @@ local function run_tests()
 		{ "run_progression", test_run_progression },
 		{ "old_save_migration", test_old_save_migration },
 		{ "slot_layout", test_slot_layout },
+		{ "layout_viewport", test_layout_viewport },
 		{ "i18n_encounters", test_i18n_encounters },
 		{ "molotov_no_junk", test_molotov_no_junk },
 		{ "weapon_marks", test_weapon_marks },

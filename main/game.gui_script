@@ -1,3 +1,4 @@
+local L = require("scripts.ui.layout")
 local W = require("scripts.ui.widgets")
 local P = require("scripts.ui.palette")
 local S = require("scripts.ui.screens")
@@ -24,9 +25,32 @@ local function card_name(id)
 	return def and def.name or tostring(id or "?")
 end
 
+function Game:update_viewport()
+	local w, h = window.get_size()
+	if not w or not h or w <= 0 or h <= 0 then
+		w, h = L.DESIGN_W, L.DESIGN_H
+	end
+	local safe = window.get_safe_area() or {}
+	L.configure(w, h, safe)
+
+	if self.root then
+		gui.set_position(self.root, v3(0, 0, 0))
+		gui.set_scale(self.root, v3(1, 1, 1))
+		gui.set_size(self.root, v3(w, h, 0))
+	end
+	if self.content then
+		gui.set_position(self.content, v3(0, 0, 0))
+		gui.set_scale(self.content, v3(L.scale, L.scale, 1))
+		gui.set_size(self.content, v3(L.W, L.H, 0))
+	end
+end
+
 function Game:boot()
 	msg.post(".", "acquire_input_focus")
 	self.root = gui.get_node("root")
+	self.content = W.layer(self.root, 0)
+	gui.set_pivot(self.content, gui.PIVOT_SW)
+	self:update_viewport()
 	self.lang = "id"
 	self.screen = "menu"
 	self.buttons = {}
@@ -60,7 +84,7 @@ end
 
 function Game:render()
 	self:clear_layer(self.layer)
-	self.layer = W.layer(self.root, 0)
+	self.layer = W.layer(self.content, 0)
 	if self.toast_layer then
 		gui.move_above(self.toast_layer, self.layer)
 	end
@@ -127,8 +151,11 @@ function Game:toast(text)
 	local wrapped = W.wrap(text, 56)
 	local _, breaks = string.gsub(wrapped, "\n", "\n")
 	local h = 42 + (breaks + 1) * 24
-	local r = W.rect(90, 1380 - h / 2, 900, h)
-	local layer = W.layer(self.root, 0)
+	local safe_w = L.W - L.safe.left - L.safe.right
+	local w = math.min(900, safe_w - 60)
+	local x = L.safe.left + (safe_w - w) / 2
+	local r = W.rect(x, L.H * 0.72 - h / 2, w, h)
+	local layer = W.layer(self.content, 0)
 	self.toast_layer = layer
 	self.toast_time = 3.4
 	W.box(layer, r, P.panel_dark, 1500)
@@ -610,7 +637,7 @@ function Game:begin_modal(mode)
 	self.last_tap = nil
 	self.modal_mode = mode
 	self.modal_buttons = {}
-	self.modal_layer = W.layer(self.root, 0)
+	self.modal_layer = W.layer(self.content, 0)
 end
 
 function Game:clear_modal()
@@ -618,10 +645,40 @@ function Game:clear_modal()
 	self.modal_layer = nil
 	self.modal_buttons = {}
 	self.modal_mode = nil
+	self.modal_alert_list = nil
+	self.modal_card_id = nil
 end
 
 function Game:close_modal()
 	self:clear_modal()
+end
+
+function Game:reopen_modal()
+	local mode = self.modal_mode
+	if mode == "pause" then
+		self:show_pause()
+	elseif mode == "help" then
+		self:show_help(self.help_return_pause)
+	elseif mode == "confirm" then
+		self:show_restart_confirm()
+	elseif mode == "alert" then
+		self:show_alert(self.modal_alert_list or {})
+	elseif mode == "card" then
+		self:show_card_preview(self.modal_card_id)
+	end
+end
+
+function Game:on_window_event(event, data)
+	if event ~= window.WINDOW_EVENT_RESIZED and event ~= window.WINDOW_EVENT_FOCUS_GAINED then
+		return
+	end
+	self:update_viewport()
+	self:clear_toast()
+	local mode = self.modal_mode
+	self:render()
+	if mode then
+		self:reopen_modal()
+	end
 end
 
 function Game:show_help(return_to_pause)
@@ -645,7 +702,8 @@ end
 
 function Game:show_alert(list)
 	self:begin_modal("alert")
-	S.alert(self, list)
+	self.modal_alert_list = list or {}
+	S.alert(self, self.modal_alert_list)
 end
 
 function Game:show_card_preview(card_id)
@@ -658,6 +716,7 @@ function Game:show_card_preview(card_id)
 	self.press = nil
 	self:update_card_selection()
 	self:begin_modal("card")
+	self.modal_card_id = card_id
 	S.card_preview(self, card_id)
 end
 
@@ -790,7 +849,8 @@ function Game:handle_input(action_id, action)
 		return
 	end
 	local screen = v3(action.screen_x or action.x, action.screen_y or action.y, 0)
-	local p = gui.screen_to_local(self.root, screen)
+	local p = gui.screen_to_local(self.content, screen)
+	p = v3(p.x / L.scale, p.y / L.scale, 0)
 	if action.pressed then
 		self:on_press(p.x, p.y)
 	elseif action.released then
@@ -801,11 +861,18 @@ function Game:handle_input(action_id, action)
 end
 
 function init(self)
-	gui.set_safe_area_mode(gui.SAFE_AREA_BOTH)
+	gui.set_safe_area_mode(gui.SAFE_AREA_NONE)
 	for k, v in pairs(Game) do
 		self[k] = v
 	end
 	self:boot()
+	window.set_listener(function(_, event, data)
+		self:on_window_event(event, data)
+	end)
+end
+
+function final(self)
+	window.set_listener(nil)
 end
 
 function update(self, dt)

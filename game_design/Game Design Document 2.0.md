@@ -86,7 +86,7 @@ Menciptakan deck-builder yang **terasa seperti puzzle biologi gelap** — bukan 
 | ------------------------- | ------------------------------------------------------ |
 | **Target Distribusi**     | Google Play Store (Min. SDK 24 / Android 7.0)          |
 | **Orientasi Layar**       | **Portrait (Vertikal)**                                |
-| **Resolusi**              | 1080×1920 base, scale ke 720×1280 & 1440×2560          |
+| **Resolusi**              | 1080×1920 base, virtual viewport mengikuti aspect layar |
 | **Native Art Resolution** | 480×800 (pixel scale ×2.5) untuk UI. 1080p untuk Monster.|
 | **Input**                 | Touchscreen (Tap, Drag & Drop, Swipe)                  |
 | **Offline**               | 100% offline                                           |
@@ -112,7 +112,8 @@ Menciptakan deck-builder yang **terasa seperti puzzle biologi gelap** — bukan 
 - **Interaksi Kartu:** Kartu hanya dimainkan lewat drag-and-drop: drag senjata ke slot yang cocok, atau drag kartu Support ke area mana pun. Tap slot tidak memainkan kartu. Double-tap kartu membuka preview detail tanpa memainkannya.
 - **Visual Kartu Terpakai:** Weapon yang di-drop ke slot ditempel di atas slot target (tinggi slot + sedikit padding, rotasi acak 20°–45° ke kiri atau kanan). Support dan weapon tanpa target ditempel berjejer ke samping di pojok kiri atas, dengan rotasi acak berbeda. Semua kartu terpakai bertahan sampai encounter selesai dan ikut tersimpan di save.
 - **Visual Hand:** Kartu di tangan dimiringkan acak 30°–45° ke kiri atau kanan agar terasa organik dan tidak rapi.
-- **Safe Area:** UI harus menghindari *notch* atau *punch-hole camera* di bagian atas layar. Gunakan *safe area inset*.
+- **Safe Area:** UI harus menghindari *notch*, *punch-hole camera*, gesture bar, dan sudut membulat. Safe area dibaca manual via `window.get_safe_area()`, lalu inset dibagi dengan skala viewport sebelum dipakai oleh layout.
+- **Responsive Viewport:** Skala konten = `min(window_width / 1080, window_height / 1920)`. Lebar/tinggi virtual = ukuran window dibagi skala tersebut, sehingga tidak ada letterbox. Background memakai *cover/crop* (bukan *stretch*) dan ruang vertikal ekstra dipakai di area tengah antara monster dan kartu tangan. UI atas dan bawah di-anchor ke sisi masing-masing.
 - **Memori & Baterai:** Hindari alokasi tabel Lua per-frame di dalam `update()`. Gunakan sistem *object pooling* untuk kartu di *hand*.
 
 ### 3.4 Arsitektur Teknis (Defold)
@@ -311,6 +312,15 @@ Visual meja bermain mengadopsi gaya **Tabletop / Board Game fisik** yang dioptim
 │ └────────────────────────────┘ └─────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────────────────┘
 ```
+
+### 9.2 Perilaku Responsive
+
+- **Skala dasar:** `scale = min(window_w / 1080, window_h / 1920)`.
+- **Viewport virtual:** `L.W = window_w / scale`, `L.H = window_h / scale`; desain 1080×1920 tetap menjadi acuan.
+- **Background:** diskalakan dengan `max(L.W / 1080, L.H / 1920)` lalu di-crop oleh layar; overlay mengikuti `L.W × L.H`.
+- **Anchor:** UI atas dan monster mengikuti safe-top; footer, hand, dan slot mengikuti safe-bottom. Sisa ruang vertikal diletakkan di tengah, bukan merenggangkan tombol atau mengecilkan slot.
+- **Slot:** ukuran `490×120` tidak boleh mengecil; boss 5 slot memakai baris ketiga tambahan ke atas.
+- **Resize:** layout dihitung ulang saat `WINDOW_EVENT_RESIZED` atau `WINDOW_EVENT_FOCUS_GAINED`, lalu modal yang sedang terbuka dibuka kembali.
 
 ---
 

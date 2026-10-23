@@ -96,4 +96,4 @@ nodes {
   pivot: PIVOT_SW
 }
 material: "/builtins/materials/gui.material"
-adjust_reference: ADJUST_REFERENCE_PARENT
+adjust_reference: ADJUST_REFERENCE_DISABLED
