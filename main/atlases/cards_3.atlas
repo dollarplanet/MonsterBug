@@ -1,0 +1,39 @@
+images {
+  image: "/main/generated/cards/SharpSpear.png"
+}
+images {
+  image: "/main/generated/cards/SmokeBomb.png"
+}
+images {
+  image: "/main/generated/cards/SpiderWeb.png"
+}
+images {
+  image: "/main/generated/cards/SpikedClub.png"
+}
+images {
+  image: "/main/generated/cards/SteelWeb.png"
+}
+images {
+  image: "/main/generated/cards/StingerNeedle.png"
+}
+images {
+  image: "/main/generated/cards/StoneHammer.png"
+}
+images {
+  image: "/main/generated/cards/Torch.png"
+}
+images {
+  image: "/main/generated/cards/Twig.png"
+}
+images {
+  image: "/main/generated/cards/WarHammer.png"
+}
+images {
+  image: "/main/generated/cards/WoodenMallet.png"
+}
+images {
+  image: "/main/generated/cards/WoodenShield.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

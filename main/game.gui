@@ -1,0 +1,99 @@
+script: "/main/game.gui_script"
+fonts {
+  name: "ui_14"
+  font: "/main/fonts/ui_14.font"
+}
+fonts {
+  name: "ui_18"
+  font: "/main/fonts/ui_18.font"
+}
+fonts {
+  name: "ui_22"
+  font: "/main/fonts/ui_22.font"
+}
+fonts {
+  name: "ui_28"
+  font: "/main/fonts/ui_28.font"
+}
+fonts {
+  name: "ui_36"
+  font: "/main/fonts/ui_36.font"
+}
+fonts {
+  name: "ui_48"
+  font: "/main/fonts/ui_48.font"
+}
+fonts {
+  name: "ui_64"
+  font: "/main/fonts/ui_64.font"
+}
+textures {
+  name: "cards_1"
+  texture: "/main/atlases/cards_1.atlas"
+}
+textures {
+  name: "cards_2"
+  texture: "/main/atlases/cards_2.atlas"
+}
+textures {
+  name: "cards_3"
+  texture: "/main/atlases/cards_3.atlas"
+}
+textures {
+  name: "monsters_1"
+  texture: "/main/atlases/monsters_1.atlas"
+}
+textures {
+  name: "monsters_2"
+  texture: "/main/atlases/monsters_2.atlas"
+}
+textures {
+  name: "monsters_3"
+  texture: "/main/atlases/monsters_3.atlas"
+}
+textures {
+  name: "monsters_4"
+  texture: "/main/atlases/monsters_4.atlas"
+}
+textures {
+  name: "monsters_5"
+  texture: "/main/atlases/monsters_5.atlas"
+}
+textures {
+  name: "ui"
+  texture: "/main/atlases/ui.atlas"
+}
+nodes {
+  id: "root"
+  type: TYPE_BOX
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+  size {
+    x: 1080.0
+    y: 1920.0
+    z: 0.0
+  }
+  color {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  pivot: PIVOT_SW
+}
+material: "/builtins/materials/gui.material"
+adjust_reference: ADJUST_REFERENCE_PARENT

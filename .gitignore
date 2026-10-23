@@ -1,6 +1,9 @@
 /.editor_settings
 /.internal
 /build
+/dist
+/debug.keystore
+/debug.keystore.pass.txt
 .externalToolBuilders
 .DS_Store
 Thumbs.db

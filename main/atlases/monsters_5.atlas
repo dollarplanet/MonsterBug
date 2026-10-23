@@ -1,0 +1,21 @@
+images {
+  image: "/main/generated/monsters/Silverfish.png"
+}
+images {
+  image: "/main/generated/monsters/StagBeetle.png"
+}
+images {
+  image: "/main/generated/monsters/StinkBug.png"
+}
+images {
+  image: "/main/generated/monsters/TarantulaHawk.png"
+}
+images {
+  image: "/main/generated/monsters/Termite.png"
+}
+images {
+  image: "/main/generated/monsters/YellowjacketWasp.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

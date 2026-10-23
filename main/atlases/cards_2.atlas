@@ -1,0 +1,39 @@
+images {
+  image: "/main/generated/cards/GlueTrap.png"
+}
+images {
+  image: "/main/generated/cards/GreenPotion.png"
+}
+images {
+  image: "/main/generated/cards/HeavyAxe.png"
+}
+images {
+  image: "/main/generated/cards/Larva.png"
+}
+images {
+  image: "/main/generated/cards/Machete.png"
+}
+images {
+  image: "/main/generated/cards/Meat.png"
+}
+images {
+  image: "/main/generated/cards/MolotovCocktail.png"
+}
+images {
+  image: "/main/generated/cards/PiercingArrow.png"
+}
+images {
+  image: "/main/generated/cards/Poison.png"
+}
+images {
+  image: "/main/generated/cards/PoisonDagger.png"
+}
+images {
+  image: "/main/generated/cards/RedPotion.png"
+}
+images {
+  image: "/main/generated/cards/SerratedSword.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

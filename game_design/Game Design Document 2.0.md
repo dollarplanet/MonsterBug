@@ -109,6 +109,7 @@ Menciptakan deck-builder yang **terasa seperti puzzle biologi gelap** — bukan 
 ### 3.3 Batasan Teknis (Mobile Portrait)
 
 - **Input Abstraksi:** Gunakan *Action* di `.input_binding` untuk mendeteksi sentuhan dan *drag*.
+- **Interaksi Kartu:** Drag kartu ke slot untuk memainkan senjata, atau tap kartu lalu tap slot. Kartu Support hanya dimainkan lewat drag. Double-tap kartu membuka preview detail tanpa memainkannya.
 - **Safe Area:** UI harus menghindari *notch* atau *punch-hole camera* di bagian atas layar. Gunakan *safe area inset*.
 - **Memori & Baterai:** Hindari alokasi tabel Lua per-frame di dalam `update()`. Gunakan sistem *object pooling* untuk kartu di *hand*.
 
@@ -167,6 +168,11 @@ main.collection
 - **3 Aksi per turn.** Sisa aksi tidak carry over.
 - Kartu support memberikan tambahan aksi atau pertahanan.
 
+### 5.4 Siklus Threat & Anti-Softlock
+- Threat monster berputar: T1 → T2 → ... → T1.
+- `destroy_weapon` tanpa senjata membakar 1 kartu.
+- Jika 2 turn berturut-turut tidak ada slot yang tertutup, 1 kartu dibakar langsung (menembus Shield) sampai pemain membuat progress. Mekanisme ini mencegah stalemate tanpa akhir.
+
 ---
 
 ## 6. Struktur Turn
@@ -186,6 +192,7 @@ main.collection
 - **Support**: Shield, Buff, Potion.
 - **Passive**: Meat.
 - **Junk & Curse**: Larva, Twig, Dry Leaf, Poison.
+- **Reward pool**: semua kartu non-junk dan non-Meat dapat muncul sebagai reward. Meat diperoleh dari pilihan reward Meat; junk diperoleh dari efek monster.
 
 ### 7.2 Pembagian Elemen Kartu (Statis vs Dinamis)
 
@@ -202,7 +209,7 @@ Setiap kartu di dalam game terdiri dari dua lapisan:
 | Wooden Mallet | Blunt | 1 | Tutup 1 slot Blunt. |
 | War Hammer | Blunt | 2 | Tutup 2 slot Blunt. |
 | Spiked Club | Blunt | 1 | Tutup 1 slot Blunt. +1 jika target Leg. |
-| Giant Sledge | Blunt | 3 | Buka semua Shield. |
+| Giant Sledge | Blunt | 3 | Tutup semua Shield. Jika tidak ada Shield, tutup 1 slot apa pun. |
 | Gauntlet | Blunt | 0 | Tutup 1 slot. Discard setelahnya. |
 | Machete | Slash | 1 | Tutup 1 slot Slash. +1 jika target Leg. |
 | Heavy Axe | Slash | 2 | Tutup 1 slot Slash. |
@@ -222,7 +229,7 @@ Setiap kartu di dalam game terdiri dari dua lapisan:
 | Spider Web | Web | 1 | Tutup 1 slot. Sisipkan Larva. |
 | Torch | Fire | 2 | Bakar 1 Larva. Tutup 1 slot Wing. |
 | Fire Arrow | Fire | 1 | Bakar 1 slot Wing. |
-| Molotov Cocktail | Fire | 2 | Bakar 2 kartu. |
+| Molotov Cocktail | Fire | 2 | Buang 2 kartu sampah. Jika tidak ada sampah, tidak ada efek. |
 | Wooden Shield | Support | 1 | Cegah 2 bakaran. |
 | Focus | Support | 0 | +1 Aksi turn ini. |
 | Alert | Support | 1 | Lihat 3 deck teratas. |
@@ -251,12 +258,12 @@ Setiap kartu di dalam game terdiri dari dua lapisan:
 
 | Nama Monster (STATIS) | Tier | Slot (Anatomi) | Serangan (DINAMIS - ID) |
 | --- | --- | --- | --- |
-| **Stag Beetle** | 1 | Mandibles, Shell, Legs | Bakar 3, Potong 2 |
-| **Praying Mantis** | 1 | Scythes, Neck, Wings | Potong 2, Tusuk 1 |
-| **Bullet Ant** | 2 | Abdomen, Head, Legs | Racun (Bakar 1/turn) |
-| **Atlas Moth** | 2 | Wings, Body, Antennae | Bakar 4, Sisip Larva |
-| **Black Widow** | 3 | Abdomen, Head, Legs | Racun (Bakar 2/turn) |
-| **Emperor Scorpion** | Boss | Shell, Tail, Legs | Bakar 3, Sengat (Tusuk 3) |
+| **Stag Beetle** | 2 | Mandibles, Shell, Legs, Head | Bakar 1, Potong 1 |
+| **Praying Mantis** | 2 | Scythe Arms, Neck, Wings, Abdomen | Potong 1, Tusuk 1 |
+| **Bullet Ant** | 2 | Abdomen, Head, Legs, Thorax | Racun (Bakar 1/turn) |
+| **Atlas Moth** | 3 | Wings, Body, Antennae, Head, Legs | Bakar 3, Sisip 1 Larva |
+| **Black Widow** | 3 | Abdomen, Head, Legs, Thorax, Fangs | Racun (Bakar 2/turn) |
+| **Emperor Scorpion** | Boss | Shell, Tail, Legs, Claws, Stinger | Bakar 3, Sengat (Tusuk 3) |
 
 *(Daftar lengkap 30 monster dapat dilihat di `monsters.md`)*
 
@@ -306,7 +313,7 @@ Visual meja bermain mengadopsi gaya **Tabletop / Board Game fisik** yang dioptim
 ---
 
 ## 10. Progresi & Meta
-- **6–8 encounter** per run.
+- **8 encounter** per run (save lama 6 encounter tetap dapat diselesaikan).
 - **1 boss** di akhir run.
 - **Run selesai dalam 20–40 menit.**
 - **Deck Awal Hero (10 kartu):** 2 Stone Hammer, 2 Bone Dagger, 2 Machete, 1 Fiber Web, 1 Torch, 1 Wooden Shield, 1 Focus.

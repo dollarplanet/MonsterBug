@@ -1,0 +1,777 @@
+local W = require("scripts.ui.widgets")
+local P = require("scripts.ui.palette")
+local S = require("scripts.ui.screens")
+local B = require("scripts.ui.battle")
+local cards = require("scripts.data.cards")
+local monsters = require("scripts.data.monsters")
+local i18n = require("scripts.data.i18n")
+local state = require("scripts.game.state")
+local combat = require("scripts.game.combat")
+local run = require("scripts.game.run")
+
+local v3 = vmath.vector3
+local DOUBLE_TAP_SECONDS = 0.3
+local Game = {}
+
+local function t(self, key, ...)
+	return i18n.text(self.lang, key, ...)
+end
+
+local function card_name(id)
+	local def = cards[id]
+	return def and def.name or tostring(id or "?")
+end
+
+function Game:boot()
+	msg.post(".", "acquire_input_focus")
+	self.root = gui.get_node("root")
+	self.lang = "id"
+	self.screen = "menu"
+	self.buttons = {}
+	self.modal_buttons = {}
+	self.card_views = {}
+	self.card_order = {}
+	self.slot_hits = {}
+	self.has_save = false
+	self.selected_uid = nil
+	self.drag = nil
+	self.press = nil
+	self.now = 0
+	self.last_tap = nil
+
+	local data = run.load()
+	if data then
+		if data.lang == "id" or data.lang == "en" then
+			self.lang = data.lang
+		end
+		self.has_save = data.run ~= nil
+	end
+	self:play_music()
+	self:render()
+end
+
+function Game:clear_layer(node)
+	if node then
+		gui.delete_node(node)
+	end
+end
+
+function Game:render()
+	self:clear_layer(self.layer)
+	self.layer = W.layer(self.root, 0)
+	if self.toast_layer then
+		gui.move_above(self.toast_layer, self.layer)
+	end
+	self.buttons = {}
+	self.slot_hits = {}
+	self.card_views = {}
+	self.card_order = {}
+	self.drag = nil
+	self.press = nil
+	self.last_tap = nil
+
+	if self.screen == "battle" and self.run and self.combat then
+		B.render(self)
+	elseif self.screen == "reward" and self.run then
+		S.reward(self)
+	elseif self.screen == "victory" then
+		S.result(self, true)
+	elseif self.screen == "defeat" then
+		S.result(self, false)
+	else
+		self.screen = "menu"
+		S.menu(self)
+	end
+end
+
+function Game:save()
+	if not self.run then
+		run.set_language(self.lang)
+		return
+	end
+	local c = nil
+	if self.screen == "battle" then
+		c = self.combat
+	end
+	if self.screen == "victory" or self.screen == "defeat" then
+		return
+	end
+	run.save(self.lang, self.run, c)
+	self.has_save = true
+end
+
+function Game:play_sound(name)
+	msg.post("audio#" .. name, "play_sound")
+end
+
+function Game:play_music()
+	msg.post("audio#music", "play_sound")
+end
+
+function Game:clear_toast()
+	self:clear_layer(self.toast_layer)
+	self.toast_layer = nil
+	self.toast_time = nil
+end
+
+function Game:toast(text)
+	if not text or text == "" then
+		return
+	end
+	self:clear_toast()
+	local wrapped = W.wrap(text, 56)
+	local _, breaks = string.gsub(wrapped, "\n", "\n")
+	local h = 42 + (breaks + 1) * 24
+	local r = W.rect(90, 1380 - h / 2, 900, h)
+	local layer = W.layer(self.root, 0)
+	self.toast_layer = layer
+	self.toast_time = 3.4
+	W.box(layer, r, P.panel_dark, 1500)
+	W.box(layer, W.rect(r.x, r.y + r.h - 2, r.w, 2), P.border, 1501)
+	W.text(layer, r.x + 18, r.y + r.h / 2, wrapped, "ui_18", P.text, 1502)
+end
+
+function Game:update_toast(dt)
+	if self.toast_time then
+		self.toast_time = self.toast_time - dt
+		if self.toast_time <= 0 then
+			self:clear_toast()
+		end
+	end
+end
+
+local function event_message(self, e)
+	local kind = e.t
+	if kind == "burned" then
+		return t(self, "burned", card_name(e.card))
+	elseif kind == "larva_hatch" then
+		return t(self, "larva_hatch")
+	elseif kind == "larva_inserted" then
+		return t(self, "larva_inserted", e.count or 1)
+	elseif kind == "larva_draw" then
+		return t(self, "larva_draw", e.turns or 2)
+	elseif kind == "poison" then
+		return t(self, "poison_draw")
+	elseif kind == "shield_absorb" then
+		return t(self, "shield_absorb", e.count or 1)
+	elseif kind == "shield_gain" then
+		return t(self, "shield_gain", e.count or 0)
+	elseif kind == "action_gain" then
+		return t(self, "action_gain", e.count or 0)
+	elseif kind == "skip_gain" then
+		return t(self, "skip_gain", e.count or 1)
+	elseif kind == "heal_revived" then
+		return t(self, "heal_revived", card_name(e.card))
+	elseif kind == "heal_meat" then
+		return t(self, "heal_meat")
+	elseif kind == "junk_removed" then
+		return t(self, "junk_removed", card_name(e.card))
+	elseif kind == "no_junk" then
+		return t(self, "no_junk")
+	elseif kind == "attack" then
+		return t(self, "attack", i18n.threat(self.lang, e.threat or { kind = "?" }))
+	elseif kind == "attack_skipped" then
+		return t(self, "attack_skipped")
+	elseif kind == "destroy_weapon" then
+		return t(self, "destroy_weapon", card_name(e.card))
+	elseif kind == "destroy_weapon_none" then
+		if (e.absorbed or 0) > 0 then
+			return t(self, "destroy_weapon_absorbed")
+		end
+		return t(self, "destroy_weapon_none")
+	elseif kind == "prevent_play" then
+		return t(self, "prevent_play")
+	elseif kind == "monster_dead" then
+		return t(self, "monster_dead")
+	elseif kind == "deck_empty" then
+		return t(self, "deck_empty")
+	elseif kind == "slot_bonus" then
+		return t(self, "slot_bonus")
+	elseif kind == "closed" then
+		local names = {}
+		for _, part in ipairs(e.parts or {}) do
+			names[#names + 1] = i18n.part(self.lang, part)
+		end
+		return t(self, "slot_closed", table.concat(names, ", "))
+	elseif kind == "card_played" then
+		return t(self, "card_played", card_name(e.card))
+	elseif kind == "not_in_hand" or kind == "unplayable" or kind == "prevented"
+		or kind == "not_enough_actions" or kind == "no_target" or kind == "choose_slot"
+		or kind == "invalid_target" then
+		return t(self, kind)
+	end
+	return nil
+end
+
+function Game:toast_events(events)
+	local messages = {}
+	local seen = {}
+	for _, e in ipairs(events or {}) do
+		local msg = event_message(self, e)
+		if msg and not seen[msg] then
+			seen[msg] = true
+			messages[#messages + 1] = msg
+		end
+	end
+	if #messages > 3 then
+		local trimmed = {}
+		for i = #messages - 2, #messages do
+			trimmed[#trimmed + 1] = messages[i]
+		end
+		messages = trimmed
+	end
+	if #messages > 0 then
+		self:toast(table.concat(messages, "\n"))
+	end
+end
+
+function Game:sound_events(events)
+	local play, burn, hit, draw = false, false, false, false
+	for _, e in ipairs(events or {}) do
+		local kind = e.t
+		if kind == "card_played" or kind == "closed" then
+			play = true
+		elseif kind == "burned" or kind == "larva_hatch" then
+			burn = true
+		elseif kind == "attack" or kind == "shield_absorb" then
+			hit = true
+		elseif kind == "draw" or kind == "larva_draw" or kind == "poison" then
+			draw = true
+		elseif kind == "monster_dead" then
+			play = true
+		end
+	end
+	if play then self:play_sound("play") end
+	if burn then self:play_sound("burn") end
+	if hit then self:play_sound("hit") end
+	if draw then self:play_sound("draw") end
+end
+
+function Game:top_cards()
+	local list = {}
+	for i = #self.run.draw, math.max(1, #self.run.draw - 2), -1 do
+		list[#list + 1] = self.run.draw[i]
+	end
+	return list
+end
+
+function Game:find_hand(uid)
+	for _, inst in ipairs(self.run.hand or {}) do
+		if inst.uid == uid then
+			return inst
+		end
+	end
+	return nil
+end
+
+function Game:card_at(x, y)
+	for i = #self.card_order, 1, -1 do
+		local view = self.card_order[i]
+		if W.contains(view.rect, x, y) then
+			return view
+		end
+	end
+	return nil
+end
+
+function Game:slot_at(x, y)
+	for i = #self.slot_hits, 1, -1 do
+		local hit = self.slot_hits[i]
+		if W.contains(hit.rect, x, y) then
+			return hit.index
+		end
+	end
+	return nil
+end
+
+function Game:update_card_selection()
+	if not self.card_order then
+		return
+	end
+	local top = self.card_order[#self.card_order]
+	for _, view in ipairs(self.card_order) do
+		local selected = view.uid == self.selected_uid
+		gui.set_enabled(view.glow, selected)
+		if selected and top and top ~= view then
+			gui.move_above(view.glow, top.node)
+			gui.move_above(view.node, view.glow)
+		end
+	end
+end
+
+function Game:select_card(uid)
+	self.selected_uid = uid
+	self:update_card_selection()
+end
+
+function Game:is_double_tap(uid)
+	return self.last_tap ~= nil
+		and self.last_tap.uid == uid
+		and (self.now - self.last_tap.at) <= DOUBLE_TAP_SECONDS
+end
+
+function Game:restore_card(view)
+	if not view then
+		return
+	end
+	gui.set_position(view.node, v3(view.cx, view.cy, 0))
+	gui.set_position(view.glow, v3(view.cx, view.cy, 0))
+end
+
+function Game:play_card(uid, slot_index)
+	self.last_tap = nil
+	local inst = self:find_hand(uid)
+	if not inst or not self.combat then
+		return
+	end
+	local has_alert = false
+	local ok, events = combat.play(self.run, self.combat, uid, slot_index)
+	for _, e in ipairs(events or {}) do
+		if e.t == "alert" then
+			has_alert = true
+		end
+	end
+	self:toast_events(events)
+	self:sound_events(events)
+
+	if ok then
+		self.selected_uid = nil
+		if self.combat.won then
+			self:finish_encounter()
+			return
+		end
+		if state.health(self.run) <= 0 then
+			self:lose()
+			return
+		end
+	end
+
+	if self.combat and not self.combat.won then
+		self:save()
+		self:render()
+		if has_alert then
+			self:show_alert(self:top_cards())
+		end
+	end
+end
+
+function Game:end_turn()
+	if not self.combat or self.combat.won then
+		return
+	end
+	self.selected_uid = nil
+	self.last_tap = nil
+	local events, status = combat.end_turn(self.run, self.combat)
+	self:toast_events(events)
+	self:sound_events(events)
+	if status == "lost" then
+		self:lose()
+		return
+	end
+	self:save()
+	self:render()
+end
+
+function Game:finish_encounter()
+	self:clear_toast()
+	local c = self.combat
+	local def = monsters[c.monster_id]
+	run.finish_encounter(self.run, c)
+	local choices = run.reward_choices(self.run)
+	self.run.pending_reward = {
+		choices = choices,
+		boss = def and def.boss or false,
+		encounter = self.run.encounter,
+	}
+	self.combat = nil
+	self.screen = "reward"
+	self.selected_uid = nil
+	self:save()
+	self:play_sound("win")
+	self:render()
+end
+
+function Game:choose_reward(index)
+	local pending = self.run and self.run.pending_reward
+	if not pending or not pending.choices[index] then
+		return
+	end
+	local choice = pending.choices[index]
+	local result = run.apply_reward(self.run, choice)
+	self.run.pending_reward = nil
+
+	if not pending.boss and state.health(self.run) <= 0 then
+		self:lose()
+		return
+	end
+
+	local message = nil
+	if result then
+		if result.kind == "cleanse_none" then
+			message = t(self, "reward_none")
+		elseif result.kind == "cleanse" then
+			message = t(self, "reward_removed", card_name(result.card))
+		else
+			message = t(self, "reward_added", card_name(result.card))
+		end
+	end
+
+	if pending.boss then
+		self.combat = nil
+		self.screen = "victory"
+		run.clear_run(self.lang)
+		self.has_save = false
+		self:play_sound("win")
+		self:render()
+		self:toast(message or t(self, "victory_desc"))
+		return
+	end
+
+	run.next_encounter(self.run)
+	local c, draw_events = run.start_encounter(self.run)
+	if not c or state.health(self.run) <= 0 then
+		self:lose()
+		return
+	end
+	self.combat = c
+	self.screen = "battle"
+	self.selected_uid = nil
+	self:save()
+	self:sound_events(draw_events)
+	self:render()
+	self:toast(message or "")
+end
+
+function Game:new_run()
+	self:clear_modal()
+	self:clear_toast()
+	self.run = run.new(os.time())
+	local events
+	self.combat, events = run.start_encounter(self.run)
+	self.screen = "battle"
+	self.selected_uid = nil
+	self.has_save = true
+	self:save()
+	self:play_sound("draw")
+	self:render()
+	self:sound_events(events)
+end
+
+function Game:continue_run()
+	local data = run.load()
+	if not data or not data.run then
+		self.has_save = false
+		self:render()
+		return
+	end
+	local loaded_run, loaded_combat = run.load_payload(data)
+	if not loaded_run then
+		self.has_save = false
+		self:render()
+		return
+	end
+	if data.lang == "id" or data.lang == "en" then
+		self.lang = data.lang
+	end
+	self.run = loaded_run
+	self.combat = loaded_combat
+	self.selected_uid = nil
+	if self.run.pending_reward then
+		self.combat = nil
+		self.screen = "reward"
+	elseif self.combat then
+		self.screen = "battle"
+		if self.combat.won then
+			self:finish_encounter()
+			return
+		end
+	else
+		local c, events = run.start_encounter(self.run)
+		self.combat = c
+		self.screen = "battle"
+		self:save()
+		self:sound_events(events)
+	end
+	self:render()
+end
+
+function Game:go_menu()
+	self:clear_modal()
+	self:clear_toast()
+	self.run = nil
+	self.combat = nil
+	self.selected_uid = nil
+	self.screen = "menu"
+	local data = run.load()
+	self.has_save = data ~= nil and data.run ~= nil
+	self:render()
+end
+
+function Game:quit_to_menu()
+	self:save()
+	self:clear_modal()
+	self:clear_toast()
+	self.run = nil
+	self.combat = nil
+	self.selected_uid = nil
+	self.screen = "menu"
+	local data = run.load()
+	self.has_save = data ~= nil and data.run ~= nil
+	self:render()
+end
+
+function Game:restart_run()
+	run.clear_run(self.lang)
+	self:new_run()
+end
+
+function Game:lose()
+	self:clear_toast()
+	self.screen = "defeat"
+	self.combat = nil
+	self.selected_uid = nil
+	run.clear_run(self.lang)
+	self.has_save = false
+	self:play_sound("lose")
+	self:render()
+end
+
+function Game:toggle_language()
+	self.lang = self.lang == "id" and "en" or "id"
+	if self.screen == "battle" or self.screen == "reward" then
+		self:save()
+	else
+		run.set_language(self.lang)
+	end
+	local mode = self.modal_mode
+	if mode == "pause" then
+		self:render()
+		self:show_pause()
+	elseif mode == "help" then
+		self:render()
+		self:show_help(self.help_return_pause)
+	else
+		self:render()
+	end
+end
+
+function Game:begin_modal(mode)
+	self:clear_modal()
+	self.last_tap = nil
+	self.modal_mode = mode
+	self.modal_buttons = {}
+	self.modal_layer = W.layer(self.root, 0)
+end
+
+function Game:clear_modal()
+	self:clear_layer(self.modal_layer)
+	self.modal_layer = nil
+	self.modal_buttons = {}
+	self.modal_mode = nil
+end
+
+function Game:close_modal()
+	self:clear_modal()
+end
+
+function Game:show_help(return_to_pause)
+	self.help_return_pause = return_to_pause
+	self:begin_modal("help")
+	S.help(self, return_to_pause)
+end
+
+function Game:show_pause()
+	if not self.run or not self.combat then
+		return
+	end
+	self:begin_modal("pause")
+	S.pause(self)
+end
+
+function Game:show_restart_confirm()
+	self:begin_modal("confirm")
+	S.restart_confirm(self)
+end
+
+function Game:show_alert(list)
+	self:begin_modal("alert")
+	S.alert(self, list)
+end
+
+function Game:show_card_preview(card_id)
+	if not cards[card_id] then
+		return
+	end
+	self.last_tap = nil
+	self.selected_uid = nil
+	self.drag = nil
+	self.press = nil
+	self:update_card_selection()
+	self:begin_modal("card")
+	S.card_preview(self, card_id)
+end
+
+function Game:on_back()
+	if self.modal_mode then
+		if self.modal_mode == "help" and self.help_return_pause then
+			self:close_modal()
+			self:show_pause()
+		elseif self.modal_mode == "confirm" then
+			self:close_modal()
+			self:show_pause()
+		else
+			self:close_modal()
+		end
+		return
+	end
+	if self.screen == "battle" then
+		self:show_pause()
+	elseif self.screen == "reward" then
+		self:quit_to_menu()
+	elseif self.screen == "victory" or self.screen == "defeat" then
+		self:go_menu()
+	end
+end
+
+function Game:on_press(x, y)
+	self.press = { x = x, y = y }
+	if self.modal_mode then
+		return
+	end
+	if self.screen == "battle" then
+		local view = self:card_at(x, y)
+		if view then
+			self.drag = {
+				uid = view.uid,
+				view = view,
+				ox = view.cx - x,
+				oy = view.cy - y,
+			}
+			self:select_card(view.uid)
+		else
+			self.last_tap = nil
+		end
+	end
+end
+
+function Game:on_move(x, y)
+	if not self.drag then
+		return
+	end
+	local view = self.drag.view
+	gui.set_position(view.node, v3(x + self.drag.ox, y + self.drag.oy, 0))
+	gui.set_position(view.glow, v3(x + self.drag.ox, y + self.drag.oy, 0))
+end
+
+function Game:on_release(x, y)
+	if self.modal_mode then
+		local b = W.button_hit(self.modal_buttons, x, y)
+		self.press = nil
+		if b and b.on_click then
+			b.on_click()
+		end
+		return
+	end
+
+	if self.screen == "battle" and self.drag then
+		local d = self.drag
+		self.drag = nil
+		local moved = false
+		if self.press then
+			moved = math.abs(x - self.press.x) + math.abs(y - self.press.y) > 20
+		end
+
+		local inst = self:find_hand(d.uid)
+		if not inst then
+			self.press = nil
+			return
+		end
+		local def = cards[inst.id]
+		local mode = def and combat.target_mode(def, self.combat) or "none"
+
+		if moved then
+			self.last_tap = nil
+			local index = self:slot_at(x, y)
+			if index then
+				self.press = nil
+				self:play_card(d.uid, index)
+				return
+			end
+			if mode == "none" or mode == "invalid" then
+				self.press = nil
+				self:play_card(d.uid, nil)
+				return
+			end
+			self:restore_card(d.view)
+			self:toast(t(self, "choose_slot"))
+		else
+			if self:is_double_tap(d.uid) then
+				self:restore_card(d.view)
+				self:show_card_preview(inst.id)
+				return
+			end
+			self.last_tap = { uid = d.uid, at = self.now }
+		end
+
+		self.press = nil
+		self:update_card_selection()
+		return
+	end
+
+	local b = W.button_hit(self.buttons, x, y)
+	self.press = nil
+	self.last_tap = nil
+	if b and b.on_click then
+		b.on_click()
+		return
+	end
+
+	if self.screen == "battle" and self.selected_uid then
+		local index = self:slot_at(x, y)
+		if index then
+			self:play_card(self.selected_uid, index)
+		end
+	end
+end
+
+function Game:handle_input(action_id, action)
+	if action_id == hash("back") then
+		if action.pressed then
+			self:on_back()
+		end
+		return
+	end
+	if action_id ~= hash("touch") then
+		return
+	end
+	local screen = v3(action.screen_x or action.x, action.screen_y or action.y, 0)
+	local p = gui.screen_to_local(self.root, screen)
+	if action.pressed then
+		self:on_press(p.x, p.y)
+	elseif action.released then
+		self:on_release(p.x, p.y)
+	else
+		self:on_move(p.x, p.y)
+	end
+end
+
+function init(self)
+	gui.set_safe_area_mode(gui.SAFE_AREA_BOTH)
+	for k, v in pairs(Game) do
+		self[k] = v
+	end
+	self:boot()
+end
+
+function update(self, dt)
+	self.now = (self.now or 0) + dt
+	if self.update_toast then
+		self:update_toast(dt)
+	end
+end
+
+function on_input(self, action_id, action)
+	if self.handle_input then
+		self:handle_input(action_id, action)
+	end
+end

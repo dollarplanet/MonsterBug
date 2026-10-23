@@ -1,0 +1,21 @@
+images {
+  image: "/main/generated/monsters/AssassinBug.png"
+}
+images {
+  image: "/main/generated/monsters/AtlasMoth.png"
+}
+images {
+  image: "/main/generated/monsters/BlackWidow.png"
+}
+images {
+  image: "/main/generated/monsters/BulletAnt.png"
+}
+images {
+  image: "/main/generated/monsters/Centipede.png"
+}
+images {
+  image: "/main/generated/monsters/Cicada.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

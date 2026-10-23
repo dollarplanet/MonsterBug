@@ -1,0 +1,21 @@
+images {
+  image: "/main/generated/monsters/GoliathBeetle.png"
+}
+images {
+  image: "/main/generated/monsters/GoliathBirdeater.png"
+}
+images {
+  image: "/main/generated/monsters/HerculesBeetle.png"
+}
+images {
+  image: "/main/generated/monsters/HoneyBee.png"
+}
+images {
+  image: "/main/generated/monsters/JerusalemCricket.png"
+}
+images {
+  image: "/main/generated/monsters/JewelBeetle.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

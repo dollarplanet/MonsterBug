@@ -13,7 +13,7 @@ Dokumen ini berisi daftar lengkap 30 Kartu Senjata (Weapons) dan 10 Kartu Tambah
 | Wooden Mallet | Blunt | 1 | Close 1 Blunt slot. |
 | War Hammer | Blunt | 2 | Close 2 Blunt slots. |
 | Spiked Club | Blunt | 1 | Close 1 Blunt slot. +1 if target is Leg. |
-| Giant Sledge | Blunt | 3 | Open all Shields. |
+| Giant Sledge | Blunt | 3 | Close all Shields. If none, close any 1 slot. |
 | Gauntlet | Blunt | 0 | Close 1 slot. Discard after use. |
 
 ## 2. SLASH WEAPONS (Potong)
@@ -45,7 +45,7 @@ Dokumen ini berisi daftar lengkap 30 Kartu Senjata (Weapons) dan 10 Kartu Tambah
 | Spider Web | Web | 1 | Close 1 slot. Insert Larva. |
 | Torch | Fire | 2 | Burn 1 Larva. Close 1 Wing slot. |
 | Fire Arrow | Fire | 1 | Burn 1 Wing slot. |
-| Molotov Cocktail | Fire | 2 | Burn 2 cards. |
+| Molotov Cocktail | Fire | 2 | Remove 2 junk cards. No effect if there is no junk. |
 
 ## 5. SUPPORT & UTILITIES
 | Card Name | Type | Cost | Effect (ID) |

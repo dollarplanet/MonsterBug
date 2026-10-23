@@ -1,0 +1,39 @@
+images {
+  image: "/main/generated/cards/Alert.png"
+}
+images {
+  image: "/main/generated/cards/BoneDagger.png"
+}
+images {
+  image: "/main/generated/cards/BoneSickle.png"
+}
+images {
+  image: "/main/generated/cards/Chainsaw.png"
+}
+images {
+  image: "/main/generated/cards/DemonTrident.png"
+}
+images {
+  image: "/main/generated/cards/DryLeaf.png"
+}
+images {
+  image: "/main/generated/cards/FiberWeb.png"
+}
+images {
+  image: "/main/generated/cards/FireArrow.png"
+}
+images {
+  image: "/main/generated/cards/Focus.png"
+}
+images {
+  image: "/main/generated/cards/FoldingKnife.png"
+}
+images {
+  image: "/main/generated/cards/Gauntlet.png"
+}
+images {
+  image: "/main/generated/cards/GiantSledge.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

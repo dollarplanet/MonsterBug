@@ -1,0 +1,21 @@
+images {
+  image: "/main/generated/monsters/Dragonfly.png"
+}
+images {
+  image: "/main/generated/monsters/Earwig.png"
+}
+images {
+  image: "/main/generated/monsters/EmperorScorpion.png"
+}
+images {
+  image: "/main/generated/monsters/Firefly.png"
+}
+images {
+  image: "/main/generated/monsters/Flea.png"
+}
+images {
+  image: "/main/generated/monsters/Glowworm.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

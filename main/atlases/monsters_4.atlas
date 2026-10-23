@@ -1,0 +1,21 @@
+images {
+  image: "/main/generated/monsters/Ladybug.png"
+}
+images {
+  image: "/main/generated/monsters/Locust.png"
+}
+images {
+  image: "/main/generated/monsters/LunaMoth.png"
+}
+images {
+  image: "/main/generated/monsters/MonarchButterfly.png"
+}
+images {
+  image: "/main/generated/monsters/PeacockSpider.png"
+}
+images {
+  image: "/main/generated/monsters/PrayingMantis.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0
