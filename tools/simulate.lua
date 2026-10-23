@@ -551,6 +551,54 @@ local function suite(runs)
 	end
 end
 
+local function test_weapon_marks()
+	local run = state.new(115)
+	reset_piles(run)
+	local c = combat.new(run, "StagBeetle")
+
+	local hammer = add_inst(run, "StoneHammer", "hand")
+	c.actions = 3
+	local ok = combat.play(run, c, hammer.uid, 1)
+	assert(ok, "target weapon play failed")
+	assert(c.slots[1].weapon and c.slots[1].weapon.card == "StoneHammer", "target weapon mark missing")
+	assert(c.slots[1].weapon.angle >= -45 and c.slots[1].weapon.angle <= 45, "target angle out of range")
+
+	local shield = add_inst(run, "WoodenShield", "hand")
+	c.actions = 3
+	ok = combat.play(run, c, shield.uid, 2)
+	assert(ok, "support play failed")
+	assert(c.slots[2].weapon == nil, "support card was placed on a slot")
+	assert(#c.monster_cards == 1 and c.monster_cards[1].card == "WoodenShield", "support mark missing")
+
+	local sledge = add_inst(run, "GiantSledge", "hand")
+	c.actions = 3
+	ok = combat.play(run, c, sledge.uid, nil)
+	assert(ok, "untargeted weapon play failed")
+	assert(#c.monster_cards == 2 and c.monster_cards[2].card == "GiantSledge", "untargeted weapon mark missing")
+
+	local molotov = add_inst(run, "MolotovCocktail", "hand")
+	c.actions = 3
+	ok = combat.play(run, c, molotov.uid, nil)
+	assert(ok, "Molotov play failed")
+	assert(#c.monster_cards == 3 and c.monster_cards[3].card == "MolotovCocktail", "Molotov mark missing")
+
+	local seen = {}
+	for _, mark in ipairs(c.monster_cards) do
+		assert(mark.angle >= -45 and mark.angle <= 45, "monster angle out of range")
+		assert(not seen[mark.angle], "duplicate monster card angle")
+		seen[mark.angle] = true
+	end
+
+	local loaded = combat.deserialize(combat.serialize(c))
+	assert(loaded and loaded.slots[1].weapon and loaded.slots[1].weapon.card == "StoneHammer",
+		"target mark lost after save")
+	assert(#loaded.monster_cards == 3, "monster marks lost after save")
+	for i, mark in ipairs(c.monster_cards) do
+		assert(loaded.monster_cards[i].card == mark.card, "monster mark card mismatch after save")
+		assert(loaded.monster_cards[i].angle == mark.angle, "monster mark angle mismatch after save")
+	end
+end
+
 local function run_tests()
 	local tests = {
 		{ "larva_crash", test_larva_crash },
@@ -568,6 +616,7 @@ local function run_tests()
 		{ "slot_layout", test_slot_layout },
 		{ "i18n_encounters", test_i18n_encounters },
 		{ "molotov_no_junk", test_molotov_no_junk },
+		{ "weapon_marks", test_weapon_marks },
 		{ "threat_cycle", test_threat_cycle },
 	}
 	local failures = 0

@@ -4,6 +4,38 @@ local state = require("scripts.game.state")
 
 local M = {}
 
+local WEAPON_CATS = { Blunt = true, Slash = true, Pierce = true, Web = true, Fire = true }
+
+local function is_weapon(card)
+	return card and WEAPON_CATS[card.cat] == true
+end
+
+local function angle_for(seed)
+	local h = 0
+	for i = 1, #seed do
+		h = (h * 33 + string.byte(seed, i)) % 1000003
+	end
+	return h % 91 - 45
+end
+
+local function unique_angle(seed, used)
+	local angle = angle_for(seed)
+	local guard = 0
+	while used[angle] and guard < 91 do
+		angle = angle + 1
+		if angle > 45 then
+			angle = -45
+		end
+		guard = guard + 1
+	end
+	return angle
+end
+
+local function clamp_angle(value)
+	value = tonumber(value) or 0
+	return math.max(-45, math.min(45, value))
+end
+
 local function add(events, t, data)
 	data = data or {}
 	data.t = t
@@ -59,6 +91,7 @@ function M.new(run, monster_id)
 		progress_turn = false,
 		won = false,
 		slots = {},
+		monster_cards = {},
 	}
 	for i, slot in ipairs(def.slots) do
 		c.slots[i] = { part = slot.part, need = slot.need, closed = false }
@@ -435,6 +468,20 @@ function M.play(run, c, uid, slot_index)
 
 	apply_secondary(run, c, card, events)
 
+	if is_weapon(card) or card.cat == "Support" then
+		local seed = tostring(c.monster_id) .. ":" .. tostring(c.turn) .. ":" .. tostring(slot_index or 0)
+			.. ":" .. tostring(inst.uid) .. ":" .. tostring(inst.id)
+		if mode == "slot" and slot_index and c.slots[slot_index] and c.slots[slot_index].closed then
+			c.slots[slot_index].weapon = { card = inst.id, angle = angle_for(seed) }
+		else
+			local used = {}
+			for _, mark in ipairs(c.monster_cards) do
+				used[mark.angle] = true
+			end
+			c.monster_cards[#c.monster_cards + 1] = { card = inst.id, angle = unique_angle(seed, used) }
+		end
+	end
+
 	if inst.id == "Larva" then
 		run.burned[#run.burned + 1] = inst
 		add(events, "burned", { card = inst.id, source = "exile" })
@@ -546,7 +593,17 @@ end
 function M.serialize(c)
 	local slots = {}
 	for i, slot in ipairs(c.slots) do
-		slots[i] = { part = slot.part, need = slot.need, closed = slot.closed }
+		local weapon = slot.weapon
+		slots[i] = {
+			part = slot.part,
+			need = slot.need,
+			closed = slot.closed,
+			weapon = weapon and { card = weapon.card, angle = weapon.angle } or nil,
+		}
+	end
+	local monster_cards = {}
+	for i, mark in ipairs(c.monster_cards or {}) do
+		monster_cards[i] = { card = mark.card, angle = mark.angle }
 	end
 	return {
 		monster_id = c.monster_id,
@@ -562,6 +619,7 @@ function M.serialize(c)
 		progress_turn = c.progress_turn or false,
 		won = c.won,
 		slots = slots,
+		monster_cards = monster_cards,
 	}
 end
 
@@ -588,6 +646,20 @@ function M.deserialize(data)
 		for i, slot in ipairs(c.slots) do
 			if data.slots[i] then
 				slot.closed = data.slots[i].closed or false
+				local weapon = data.slots[i].weapon
+				if type(weapon) == "table" and cards[weapon.card] then
+					slot.weapon = { card = weapon.card, angle = clamp_angle(weapon.angle) }
+				end
+			end
+		end
+	end
+	if type(data.monster_cards) == "table" then
+		for _, mark in ipairs(data.monster_cards) do
+			if type(mark) == "table" and cards[mark.card] then
+				c.monster_cards[#c.monster_cards + 1] = {
+					card = mark.card,
+					angle = clamp_angle(mark.angle),
+				}
 			end
 		end
 	end

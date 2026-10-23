@@ -110,6 +110,7 @@ Menciptakan deck-builder yang **terasa seperti puzzle biologi gelap** — bukan 
 
 - **Input Abstraksi:** Gunakan *Action* di `.input_binding` untuk mendeteksi sentuhan dan *drag*.
 - **Interaksi Kartu:** Kartu hanya dimainkan lewat drag-and-drop: drag senjata ke slot yang cocok, atau drag kartu Support ke area mana pun. Tap slot tidak memainkan kartu. Double-tap kartu membuka preview detail tanpa memainkannya.
+- **Visual Kartu Terpakai:** Weapon yang di-drop ke slot ditempel di atas slot target (tinggi slot + sedikit padding, rotasi acak maksimal 45°). Support dan weapon tanpa target ditempel bertumpuk di tepi kanan layar dekat monster agar tidak menutupi monster, dengan rotasi acak berbeda. Semua kartu terpakai bertahan sampai encounter selesai dan ikut tersimpan di save.
 - **Safe Area:** UI harus menghindari *notch* atau *punch-hole camera* di bagian atas layar. Gunakan *safe area inset*.
 - **Memori & Baterai:** Hindari alokasi tabel Lua per-frame di dalam `update()`. Gunakan sistem *object pooling* untuk kartu di *hand*.
 

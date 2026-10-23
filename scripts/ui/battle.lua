@@ -196,6 +196,32 @@ local function draw_card(app, inst, index, pos, count)
 	app.card_order[#app.card_order + 1] = view
 end
 
+local function draw_mark(app, card_id, cx, cy, h, angle)
+	local info = asset_map.cards[card_id]
+	if not info then
+		return
+	end
+	local w = h * L.weapon_mark.aspect
+	local node = W.image(app.layer, cx, cy, w, h, info.atlas, info.anim, P.white, 0)
+	gui.set_rotation(node, v3(0, 0, math.rad(angle or 0)))
+end
+
+local function draw_weapon_marks(app, slot_layout)
+	for i, slot in ipairs(app.combat.slots) do
+		if slot.weapon then
+			local pos = slot_layout.positions[i]
+			draw_mark(app, slot.weapon.card,
+				pos.x + slot_layout.w / 2,
+				pos.y + slot_layout.h / 2,
+				slot_layout.h + L.weapon_mark.pad,
+				slot.weapon.angle)
+		end
+	end
+	for _, mark in ipairs(app.combat.monster_cards or {}) do
+		draw_mark(app, mark.card, L.monster_cards.cx, L.monster_cards.y, L.monster_cards.h, mark.angle)
+	end
+end
+
 local function draw_hand(app)
 	local hand = app.run.hand or {}
 	local positions = L.hand_positions(#hand)
@@ -288,6 +314,7 @@ function B.render(app)
 	for i, slot in ipairs(app.combat.slots) do
 		slot_state(app, i, slot, valid_set, slot_layout)
 	end
+	draw_weapon_marks(app, slot_layout)
 
 	draw_threat(app)
 	draw_hand(app)

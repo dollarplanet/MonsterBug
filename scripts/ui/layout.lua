@@ -42,6 +42,17 @@ L.hand = {
 	margin = 40,
 }
 
+L.weapon_mark = {
+	pad = 12,
+	aspect = 260 / 388,
+}
+
+L.monster_cards = {
+	cx = L.W - 71,
+	y = 1300,
+	h = 120,
+}
+
 L.footer = {
 	deck = { x = 30, y = 30, w = 150, h = 112 },
 	health = { x = 410, y = 42, w = 640, h = 82 },
