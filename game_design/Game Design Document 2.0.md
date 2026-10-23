@@ -109,7 +109,7 @@ Menciptakan deck-builder yang **terasa seperti puzzle biologi gelap** — bukan 
 ### 3.3 Batasan Teknis (Mobile Portrait)
 
 - **Input Abstraksi:** Gunakan *Action* di `.input_binding` untuk mendeteksi sentuhan dan *drag*.
-- **Interaksi Kartu:** Drag kartu ke slot untuk memainkan senjata, atau tap kartu lalu tap slot. Kartu Support hanya dimainkan lewat drag. Double-tap kartu membuka preview detail tanpa memainkannya.
+- **Interaksi Kartu:** Kartu hanya dimainkan lewat drag-and-drop: drag senjata ke slot yang cocok, atau drag kartu Support ke area mana pun. Tap slot tidak memainkan kartu. Double-tap kartu membuka preview detail tanpa memainkannya.
 - **Safe Area:** UI harus menghindari *notch* atau *punch-hole camera* di bagian atas layar. Gunakan *safe area inset*.
 - **Memori & Baterai:** Hindari alokasi tabel Lua per-frame di dalam `update()`. Gunakan sistem *object pooling* untuk kartu di *hand*.
 
@@ -369,7 +369,7 @@ Visual meja bermain mengadopsi gaya **Tabletop / Board Game fisik** yang dioptim
 | Risiko | Dampak | Mitigasi |
 | --- | --- | --- |
 | Monster terlalu menutupi UI | Informasi terhalang | Gunakan Z-Order; UI Nama & Tombol di lapisan depan. |
-| Kartu Hand overlap terlalu rapat | Sulit diklik di HP | Beri *hitbox* yang tepat saat kartu di-tap/di-drag. |
+| Kartu Hand overlap terlalu rapat | Sulit di-drag di HP | Beri *hitbox* yang tepat saat kartu di-tap/di-drag. |
 | Teks efek terpotong akibat bahasa | UI berantakan | Gunakan fitur *text wrap* (word wrap) di GUI Defold. |
 | Layar HP terlalu kecil (Portrait) | Target Slot 2x2 sesak | Gunakan layout *full-width* dan kurangi padding. |
 

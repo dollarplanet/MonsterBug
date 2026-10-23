@@ -762,12 +762,6 @@ function Game:on_release(x, y)
 		return
 	end
 
-	if self.screen == "battle" and self.selected_uid then
-		local index = self:slot_at(x, y)
-		if index then
-			self:play_card(self.selected_uid, index)
-		end
-	end
 end
 
 function Game:handle_input(action_id, action)

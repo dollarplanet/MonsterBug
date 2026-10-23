@@ -104,7 +104,7 @@ AKSI
 Kamu punya 3 aksi per turn. Biaya aksi ada di kartu. Sisa aksi tidak terbawa.
 
 CARA MAIN
-Seret kartu ke slot yang cocok, atau tap kartu lalu tap slot. Kartu Support dimainkan dengan menyeretnya. Ketuk dua kali kartu untuk memperbesar dan membaca detail.
+Seret kartu ke slot yang cocok untuk memainkannya. Kartu Support juga dimainkan dengan menyeret. Ketuk dua kali kartu untuk memperbesar dan membaca detail.
 
 ANCAMAN
 Monster menyerang di akhir turn. Lihat panel ancaman untuk jadwal berikutnya.
@@ -264,7 +264,7 @@ ACTIONS
 You get 3 actions per turn. The action cost is printed on each card. Leftover actions do not carry over.
 
 HOW TO PLAY
-Drag a card onto a matching slot, or tap a card then tap a slot. Support cards are played by dragging them. Double-tap a card to enlarge it and read the details.
+Drag a card onto a matching slot to play it. Support cards are also played by dragging. Double-tap a card to enlarge it and read the details.
 
 THREATS
 The monster attacks at the end of the turn. Read the threat panel for the upcoming schedule.
