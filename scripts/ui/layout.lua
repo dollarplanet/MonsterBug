@@ -10,10 +10,10 @@ L.top = {
 }
 
 L.monster = {
-	cx = 540,
-	bottom = 1020,
-	max_w = 790,
-	max_h = 630,
+	cx = 500,
+	top = L.top.end_turn.y - 10,
+	max_w = 900,
+	max_h = 900,
 }
 
 L.slots = {
@@ -48,9 +48,9 @@ L.weapon_mark = {
 }
 
 L.monster_cards = {
-	cx = L.W - 71,
+	cx = L.W - 62,
 	y = 1300,
-	h = 120,
+	h = 105,
 }
 
 L.footer = {

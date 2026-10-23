@@ -71,11 +71,11 @@ local function draw_monster(app)
 	if not def or not info then
 		return
 	end
-	local scale = math.min(L.monster.max_w / info.w, L.monster.max_h / info.h, 1)
+	local scale = math.min(L.monster.max_w / info.w, L.monster.max_h / info.h)
 	local w = info.w * scale
 	local h = info.h * scale
 	local cx = L.monster.cx
-	local cy = L.monster.bottom + h / 2
+	local cy = L.monster.top - h / 2
 	W.image(app.layer, cx, cy, w, h, info.atlas, info.anim, P.white, 2)
 
 	local tier_key = def.boss and "boss" or "insect"
