@@ -107,6 +107,51 @@ function W.text(parent, x, y, value, font, color, z, max_chars)
 	return node
 end
 
+function W.text_center(parent, cx, cy, value, font, color, max_chars)
+	local text = value
+	if max_chars and max_chars > 0 then
+		text = W.wrap(text, max_chars)
+	end
+	local node = gui.new_text_node(v3(cx, cy, 0), text)
+	gui.set_parent(node, parent)
+	gui.set_font(node, font or "ui_22")
+	gui.set_pivot(node, gui.PIVOT_CENTER)
+	gui.set_color(node, color or vmath.vector4(1, 1, 1, 1))
+	return node
+end
+
+function W.dashed_rect(parent, r, color, opts)
+	opts = opts or {}
+	local dash = opts.dash or 14
+	local gap = opts.gap or 10
+	local thickness = opts.thickness or 3
+	local step = dash + gap
+	local x, y, w, h = r.x, r.y, r.w, r.h
+	local nodes = {}
+
+	local function add(dx, dy, dw, dh)
+		nodes[#nodes + 1] = W.box(parent, W.rect(dx, dy, dw, dh), color, opts.z)
+	end
+
+	local i = 0
+	while i < w do
+		local len = math.min(dash, w - i)
+		add(x + i, y, len, thickness)
+		add(x + i, y + h - thickness, len, thickness)
+		i = i + step
+	end
+
+	i = thickness
+	local bottom = h - thickness
+	while i < bottom do
+		local len = math.min(dash, bottom - i)
+		add(x, y + i, thickness, len)
+		add(x + w - thickness, y + i, thickness, len)
+		i = i + step
+	end
+	return nodes
+end
+
 function W.label(parent, r, value, font, color, z, pad)
 	local p = pad or 16
 	return W.text(parent, r.x + p, r.y + r.h / 2, value, font, color, z, nil)

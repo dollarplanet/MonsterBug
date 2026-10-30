@@ -15,15 +15,15 @@ local BASE = {
 		max_h = 900,
 	},
 	slots = {
-		label = { x = 30, y = 1228 },
-		positions = {
-			{ x = 30, y = 1078 },
-			{ x = 560, y = 1078 },
-			{ x = 30, y = 938 },
-			{ x = 560, y = 938 },
-		},
-		w = 490,
-		h = 120,
+		label = { x = 30, y = 1592 },
+		cols = 4,
+		rows = 2,
+		w = 220,
+		h = 328,
+		gap_x = 24,
+		gap_y = 20,
+		margin_x = 30,
+		bottom_y = 880,
 	},
 	threat = {
 		x = 30, y = 688, w = 1020, h = 172,
@@ -40,7 +40,7 @@ local BASE = {
 		aspect = 260 / 388,
 	},
 	monster_cards = {
-		cx = 130,
+		cx = 90,
 		y = 1650,
 		h = 210,
 		gap = 156,
@@ -84,6 +84,57 @@ local function copy_positions(list)
 	return out
 end
 
+local function compute_slot_grid()
+	local cols = BASE.slots.cols
+	local rows = BASE.slots.rows
+	local gap_x = BASE.slots.gap_x
+	local gap_y = BASE.slots.gap_y
+	local w = BASE.slots.w
+	local available = L.W - L.safe.left - L.safe.right - BASE.slots.margin_x * 2
+	local needed = cols * w + (cols - 1) * gap_x
+	if needed > available and available > 0 then
+		w = math.max(120, (available - (cols - 1) * gap_x) / cols)
+	end
+	local h = w * BASE.slots.h / BASE.slots.w
+	local grid_w = cols * w + (cols - 1) * gap_x
+	local grid_h = rows * h + (rows - 1) * gap_y
+	local left = L.safe.left + (L.W - L.safe.left - L.safe.right - grid_w) / 2
+	local bottom = BASE.slots.bottom_y + L.safe.bottom
+	local max_top = (L.top.name.y or (L.H - L.safe.top - 132)) - 72
+	if bottom + grid_h > max_top then
+		bottom = max_top - grid_h
+	end
+	if bottom < L.safe.bottom + 10 then
+		bottom = L.safe.bottom + 10
+	end
+
+	L.slots.w = w
+	L.slots.h = h
+	L.slots.gap_x = gap_x
+	L.slots.gap_y = gap_y
+	L.slots.cols = cols
+	L.slots.rows = rows
+	L.slots.left = left
+	L.slots.bottom = bottom
+	L.slots.top = bottom + grid_h
+	L.slots.grid_w = grid_w
+	L.slots.grid_h = grid_h
+
+	local positions = {}
+	for row = 0, rows - 1 do
+		local y = bottom + (rows - 1 - row) * (h + gap_y)
+		for col = 0, cols - 1 do
+			positions[#positions + 1] = {
+				x = left + col * (w + gap_x),
+				y = y,
+			}
+		end
+	end
+	L.slots.positions = positions
+	L.slots.label.x = left
+	L.slots.label.y = L.slots.top + 36
+end
+
 function L.reset()
 	L.W = L.DESIGN_W
 	L.H = L.DESIGN_H
@@ -105,9 +156,18 @@ function L.reset()
 	}
 	L.slots = {
 		label = copy_pos(BASE.slots.label),
-		positions = copy_positions(BASE.slots.positions),
+		positions = {},
+		cols = BASE.slots.cols,
+		rows = BASE.slots.rows,
 		w = BASE.slots.w,
 		h = BASE.slots.h,
+		gap_x = BASE.slots.gap_x,
+		gap_y = BASE.slots.gap_y,
+		left = 0,
+		bottom = BASE.slots.bottom_y,
+		top = 0,
+		grid_w = 0,
+		grid_h = 0,
 	}
 	L.threat = {
 		x = BASE.threat.x,
@@ -150,6 +210,7 @@ function L.reset()
 		image = copy_rect(BASE.card_preview.image),
 		close = copy_rect(BASE.card_preview.close),
 	}
+	compute_slot_grid()
 end
 
 function L.configure(window_w, window_h, safe_area)
@@ -187,13 +248,6 @@ function L.configure(window_w, window_h, safe_area)
 	L.monster.cx = L.W / 2 - 40
 	L.monster.top = L.top.end_turn.y - 10
 
-	for _, pos in ipairs(L.slots.positions) do
-		pos.x = pos.x + L.ox
-		pos.y = pos.y + L.safe.bottom
-	end
-	L.slots.label.x = L.slots.label.x + L.ox
-	L.slots.label.y = L.slots.label.y + L.safe.bottom
-
 	L.threat.x = L.safe.left + 30
 	L.threat.y = BASE.threat.y + L.safe.bottom
 	L.threat.w = L.W - L.safe.left - L.safe.right - 60
@@ -209,8 +263,10 @@ function L.configure(window_w, window_h, safe_area)
 	L.hand.left = L.safe.left + L.hand.margin
 	L.hand.right = L.W - L.safe.right - L.hand.margin
 
-	L.monster_cards.cx = L.safe.left + 130
+	L.monster_cards.cx = L.safe.left + 90
 	L.monster_cards.y = L.top.name.y - 33 - L.monster_cards.h / 2
+
+	compute_slot_grid()
 
 	L.footer.deck.x = L.safe.left + 30
 	L.footer.deck.y = BASE.footer.deck.y + L.safe.bottom
@@ -231,31 +287,48 @@ function L.configure(window_w, window_h, safe_area)
 end
 
 function L.slot_layout(count)
-	count = math.max(1, math.min(5, count or 3))
-	if count < 5 then
-		local positions = {}
-		for i = 1, count do
-			positions[i] = L.slots.positions[i]
+	count = math.max(1, math.min(6, count or 3))
+	local w = L.slots.w
+	local h = L.slots.h
+	local gap_x = L.slots.gap_x
+	local gap_y = L.slots.gap_y
+	local left = L.slots.left
+	local bottom = L.slots.bottom
+	local top = bottom + h + gap_y
+	local positions = {}
+
+	local function add_row(y, first, last)
+		for i = first, last do
+			positions[i] = { x = left + (i - first) * (w + gap_x), y = y }
 		end
-		return {
-			positions = positions,
-			w = L.slots.w,
-			h = L.slots.h,
-			label_y = L.slots.label.y,
-		}
 	end
-	local positions = {
-		{ x = 30 + L.ox, y = 1218 + L.safe.bottom },
-		{ x = 560 + L.ox, y = 1218 + L.safe.bottom },
-		{ x = 30 + L.ox, y = 1078 + L.safe.bottom },
-		{ x = 560 + L.ox, y = 1078 + L.safe.bottom },
-		{ x = 30 + L.ox, y = 938 + L.safe.bottom },
-	}
+
+	if count <= L.slots.cols then
+		local row_w = count * w + (count - 1) * gap_x
+		local x = left + (L.slots.grid_w - row_w) / 2
+		for i = 1, count do
+			positions[i] = { x = x, y = bottom }
+			x = x + w + gap_x
+		end
+	else
+		add_row(bottom, 1, 4)
+		positions[5] = { x = left + (L.slots.cols - 1) * (w + gap_x), y = top }
+		if count >= 6 then
+			positions[6] = { x = left, y = top }
+		end
+	end
+
+	local label_y = positions[1].y + h + 36
+	for _, pos in ipairs(positions) do
+		label_y = math.max(label_y, pos.y + h + 36)
+	end
+
 	return {
 		positions = positions,
-		w = L.slots.w,
-		h = L.slots.h,
-		label_y = positions[1].y + L.slots.h + 36,
+		w = w,
+		h = h,
+		left = left,
+		label_y = label_y,
 	}
 end
 

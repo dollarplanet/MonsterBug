@@ -364,60 +364,125 @@ local monsters = {
 }
 
 local extra_slots = {
+	-- Tier 1: 1 extra slot (4 total)
+	Ladybug = {
+		{ part = "Head", need = "Blunt" },
+	},
+	JewelBeetle = {
+		{ part = "Legs", need = "Slash" },
+	},
+	YellowjacketWasp = {
+		{ part = "Head", need = "Blunt" },
+	},
+	HoneyBee = {
+		{ part = "Legs", need = "Slash" },
+	},
+	MonarchButterfly = {
+		{ part = "Legs", need = "Slash" },
+	},
+	PeacockSpider = {
+		{ part = "Thorax", need = "Slash" },
+	},
+	StinkBug = {
+		{ part = "Wings", need = "Web" },
+	},
+	Cicada = {
+		{ part = "Legs", need = "Slash" },
+	},
+	Dragonfly = {
+		{ part = "Legs", need = "Slash" },
+	},
+	Earwig = {
+		{ part = "Abdomen", need = "Pierce" },
+	},
+	Firefly = {
+		{ part = "Legs", need = "Slash" },
+	},
+	Silverfish = {
+		{ part = "Legs", need = "Slash" },
+	},
+	Termite = {
+		{ part = "Wings", need = "Web" },
+	},
+	Flea = {
+		{ part = "Abdomen", need = "Pierce" },
+	},
+
+	-- Tier 2: 2 extra slots (5 total)
 	StagBeetle = {
 		{ part = "Head", need = "Pierce" },
+		{ part = "Abdomen", need = "Pierce" },
 	},
 	BulletAnt = {
 		{ part = "Thorax", need = "Slash" },
+		{ part = "Mandibles", need = "Blunt" },
 	},
 	LunaMoth = {
 		{ part = "Antennae", need = "Blunt" },
+		{ part = "Legs", need = "Slash" },
 	},
 	AssassinBug = {
 		{ part = "Legs", need = "Blunt" },
+		{ part = "Abdomen", need = "Pierce" },
 	},
 	PrayingMantis = {
 		{ part = "Abdomen", need = "Pierce" },
+		{ part = "Head", need = "Blunt" },
 	},
 	Locust = {
 		{ part = "Head", need = "Blunt" },
+		{ part = "Thorax", need = "Blunt" },
 	},
 	JerusalemCricket = {
 		{ part = "Wings", need = "Web" },
+		{ part = "Thorax", need = "Blunt" },
 	},
 	Glowworm = {
 		{ part = "Wings", need = "Web" },
+		{ part = "Thorax", need = "Blunt" },
 	},
+
+	-- Tier 3: 3 extra slots (6 total)
 	GoliathBeetle = {
 		{ part = "Mandibles", need = "Pierce" },
 		{ part = "Abdomen", need = "Slash" },
+		{ part = "Wings", need = "Web" },
 	},
 	HerculesBeetle = {
 		{ part = "Head", need = "Pierce" },
 		{ part = "Abdomen", need = "Slash" },
+		{ part = "Wings", need = "Web" },
 	},
 	TarantulaHawk = {
 		{ part = "Head", need = "Blunt" },
 		{ part = "Thorax", need = "Blunt" },
+		{ part = "Stinger", need = "Pierce" },
 	},
 	AtlasMoth = {
 		{ part = "Head", need = "Blunt" },
 		{ part = "Legs", need = "Slash" },
+		{ part = "Abdomen", need = "Pierce" },
 	},
 	BlackWidow = {
 		{ part = "Thorax", need = "Slash" },
 		{ part = "Fangs", need = "Pierce" },
+		{ part = "Eyes", need = "Pierce" },
 	},
 	GoliathBirdeater = {
 		{ part = "Fangs", need = "Pierce" },
 		{ part = "Thorax", need = "Blunt" },
-	},
-	EmperorScorpion = {
-		{ part = "Stinger", need = "Pierce" },
+		{ part = "Eyes", need = "Pierce" },
 	},
 	Centipede = {
 		{ part = "Antennae", need = "Pierce" },
 		{ part = "Tail", need = "Slash" },
+		{ part = "Mandibles", need = "Pierce" },
+	},
+
+	-- Boss: 2 extra slots (6 total)
+	EmperorScorpion = {
+		{ part = "Stinger", need = "Pierce" },
+		{ part = "Head", need = "Blunt" },
 	},
 }
 

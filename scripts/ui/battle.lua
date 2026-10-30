@@ -38,36 +38,39 @@ local function slot_state(app, index, slot, valid_set, layout)
 	local tc = type_color(slot.need)
 	local selected = app.selected_uid ~= nil
 	local valid = valid_set and valid_set[index]
-	local bg_color = tc.bg
-	local border_color = tc.border
+	local fill_color = P.alpha(tc.border, 0.14)
+	local border_color = P.alpha(tc.border, 0.9)
+	local part_color = P.text
+	local need_color = tc.text
+	local closed_label = nil
+
 	if slot.closed then
-		bg_color = P.panel_dark
-		border_color = P.dim
-	elseif selected then
-		if valid then
-			bg_color = P.alpha(tc.bg, 1)
-			border_color = P.gold
-		else
-			bg_color = P.alpha(tc.bg, 0.55)
-			border_color = P.dim
-		end
+		fill_color = P.alpha(P.panel_dark, 0.9)
+		border_color = P.alpha(P.dim, 0.9)
+		part_color = P.muted
+		need_color = P.muted
+		closed_label = t(app, "closed")
+	elseif selected and valid then
+		fill_color = P.alpha(tc.border, 0.24)
+		border_color = P.gold
 	end
 
-	local bg, border = W.panel(app.layer, r, 40, { color = bg_color, border = border_color })
-	local stripe = W.box(app.layer, W.rect(r.x, r.y, 9, r.h), slot.closed and P.dim or tc.border, 42)
-	local part_color = slot.closed and P.muted or P.text
-	local type_text_color = slot.closed and P.muted or tc.text
-	W.text(app.layer, r.x + 24, r.y + r.h * 0.68, i18n.part(app.lang, slot.part), "ui_22", part_color, 44)
-	W.text(app.layer, r.x + 24, r.y + r.h * 0.33, t(app, "need", i18n.need(app.lang, slot.need)), "ui_18", type_text_color, 44)
-	local status = slot.closed and t(app, "closed") or t(app, "open")
-	local status_color = slot.closed and P.muted or tc.text
-	W.text(app.layer, r.x + r.w - 118, r.y + r.h / 2, status, "ui_14", status_color, 44)
+	W.box(app.layer, r, fill_color, 40)
+	W.dashed_rect(app.layer, r, border_color, { dash = 14, gap = 10, thickness = 3, z = 41 })
+
+	local cx = r.x + r.w / 2
+	local cy = r.y + r.h / 2
+	if slot.closed and slot.weapon then
+		-- The weapon card is drawn over the slot in draw_weapon_marks.
+	else
+		W.text_center(app.layer, cx, cy + 22, i18n.part(app.lang, slot.part), "ui_22", part_color, 16)
+		local line = closed_label or t(app, "need", i18n.need(app.lang, slot.need))
+		W.text_center(app.layer, cx, cy - 30, line, "ui_18", need_color, 18)
+	end
 
 	if not slot.closed then
 		app.slot_hits[#app.slot_hits + 1] = { rect = r, index = index }
 	end
-
-	return bg, border, stripe
 end
 
 local function draw_monster(app)
@@ -212,14 +215,15 @@ local function draw_card(app, inst, index, pos, count)
 	app.card_order[#app.card_order + 1] = view
 end
 
-local function draw_mark(app, card_id, cx, cy, h, angle)
+local function draw_mark(app, card_id, cx, cy, w, h, angle)
 	local info = asset_map.cards[card_id]
 	if not info then
 		return
 	end
-	local w = h * L.weapon_mark.aspect
 	local node = W.image(app.layer, cx, cy, w, h, info.atlas, info.anim, P.white, 0)
-	gui.set_rotation(node, v3(0, 0, math.rad(angle or 0)))
+	if angle and angle ~= 0 then
+		gui.set_rotation(node, v3(0, 0, math.rad(angle)))
+	end
 end
 
 local function draw_weapon_marks(app, slot_layout)
@@ -229,16 +233,19 @@ local function draw_weapon_marks(app, slot_layout)
 			draw_mark(app, slot.weapon.card,
 				pos.x + slot_layout.w / 2,
 				pos.y + slot_layout.h / 2,
-				slot_layout.h + L.weapon_mark.pad,
-				slot.weapon.angle)
+				slot_layout.w,
+				slot_layout.h,
+				0)
 		end
 	end
 	local marks = app.combat.monster_cards or {}
 	for i, mark in ipairs(marks) do
+		local h = L.monster_cards.h
 		draw_mark(app, mark.card,
 			L.monster_cards.cx + (i - 1) * L.monster_cards.gap,
 			L.monster_cards.y,
-			L.monster_cards.h,
+			h * L.weapon_mark.aspect,
+			h,
 			mark.angle)
 	end
 end
@@ -321,7 +328,7 @@ function B.render(app)
 	draw_monster(app)
 	local slot_layout = L.slot_layout(#app.combat.slots)
 
-	local label_r = W.rect(L.slots.label.x, (slot_layout.label_y or L.slots.label.y) - 18, 260, 44)
+	local label_r = W.rect(slot_layout.left or L.slots.label.x, (slot_layout.label_y or L.slots.label.y) - 18, 260, 44)
 	W.panel(app.layer, label_r, 80, { color = P.alpha(P.panel_dark, 0.92), border = P.gold_soft })
 	W.text(app.layer, label_r.x + 12, label_r.y + 22, t(app, "target_slots"), "ui_22", P.gold)
 

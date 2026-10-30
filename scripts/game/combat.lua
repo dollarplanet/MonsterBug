@@ -215,19 +215,29 @@ end
 local function close_slots(run, c, card, slot_index, events)
 	local e = card.effect.close
 	local closed = {}
+	local closed_indices = {}
+
+	local function close(index)
+		local slot = c.slots[index]
+		if not slot or slot.closed then
+			return false
+		end
+		slot.closed = true
+		closed[#closed + 1] = slot.part
+		closed_indices[#closed_indices + 1] = index
+		return true
+	end
 
 	if e.match == "all_shields" then
-		for _, slot in ipairs(c.slots) do
+		for i, slot in ipairs(c.slots) do
 			if not slot.closed and M.is_shield(slot) then
-				slot.closed = true
-				closed[#closed + 1] = slot.part
+				close(i)
 			end
 		end
 		if #closed == 0 and e.fallback_any then
-			for _, slot in ipairs(c.slots) do
+			for i, slot in ipairs(c.slots) do
 				if not slot.closed then
-					slot.closed = true
-					closed[#closed + 1] = slot.part
+					close(i)
 					break
 				end
 			end
@@ -235,7 +245,7 @@ local function close_slots(run, c, card, slot_index, events)
 	else
 		if not slot_index then
 			if e.optional then
-				return true
+				return true, nil, closed_indices
 			end
 			return false, { { t = "choose_slot" } }
 		end
@@ -243,8 +253,7 @@ local function close_slots(run, c, card, slot_index, events)
 		if not slot or slot.closed then
 			return false, { { t = "invalid_target" } }
 		end
-		slot.closed = true
-		closed[#closed + 1] = slot.part
+		close(slot_index)
 
 		local total = e.count or 1
 		if e.bonus_part and M.part_matches(slot.part, e.bonus_part) then
@@ -280,8 +289,7 @@ local function close_slots(run, c, card, slot_index, events)
 			if not found then
 				break
 			end
-			c.slots[found].closed = true
-			closed[#closed + 1] = c.slots[found].part
+			close(found)
 		end
 	end
 
@@ -290,7 +298,7 @@ local function close_slots(run, c, card, slot_index, events)
 	end
 	c.progress_turn = true
 	add(events, "closed", { parts = closed, count = #closed })
-	return true
+	return true, nil, closed_indices
 end
 
 local function burn_direct(run, n, events, source)
@@ -464,8 +472,9 @@ function M.play(run, c, uid, slot_index)
 	add(events, "card_played", { card = inst.id })
 
 	local ok, err = true, nil
+	local closed_indices = {}
 	if card.effect and card.effect.close then
-		ok, err = close_slots(run, c, card, slot_index, events)
+		ok, err, closed_indices = close_slots(run, c, card, slot_index, events)
 	end
 	if not ok then
 		c.actions = c.actions + cost
@@ -478,8 +487,12 @@ function M.play(run, c, uid, slot_index)
 	if is_weapon(card) or card.cat == "Support" then
 		local seed = tostring(c.monster_id) .. ":" .. tostring(c.turn) .. ":" .. tostring(slot_index or 0)
 			.. ":" .. tostring(inst.uid) .. ":" .. tostring(inst.id)
-		if mode == "slot" and slot_index and c.slots[slot_index] and c.slots[slot_index].closed then
-			c.slots[slot_index].weapon = { card = inst.id, angle = angle_for(seed) }
+		closed_indices = closed_indices or {}
+		if #closed_indices > 0 then
+			local mark = { card = inst.id, angle = angle_for(seed) }
+			for _, index in ipairs(closed_indices) do
+				c.slots[index].weapon = { card = mark.card, angle = mark.angle }
+			end
 		else
 			local used = {}
 			for _, mark in ipairs(c.monster_cards) do

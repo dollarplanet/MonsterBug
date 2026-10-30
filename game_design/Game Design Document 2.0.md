@@ -110,7 +110,7 @@ Menciptakan deck-builder yang **terasa seperti puzzle biologi gelap** — bukan 
 
 - **Input Abstraksi:** Gunakan *Action* di `.input_binding` untuk mendeteksi sentuhan dan *drag*.
 - **Interaksi Kartu:** Kartu hanya dimainkan lewat drag-and-drop: drag senjata ke slot yang cocok, atau drag kartu Support ke area mana pun. Tap slot tidak memainkan kartu. Double-tap kartu membuka preview detail tanpa memainkannya.
-- **Visual Kartu Terpakai:** Weapon yang di-drop ke slot ditempel di atas slot target (tinggi slot + sedikit padding, rotasi acak 20°–45° ke kiri atau kanan). Support dan weapon tanpa target ditempel berjejer ke samping di pojok kiri atas, dengan rotasi acak berbeda. Semua kartu terpakai bertahan sampai encounter selesai dan ikut tersimpan di save.
+- **Visual Kartu Terpakai:** Weapon yang di-drop ke slot diskalakan tepat seukuran slot target (rasio kartu 260:388, tanpa rotasi) sehingga menutupi slot secara total. Support dan weapon tanpa target ditempel berjejer ke samping di pojok kiri atas, dengan rotasi acak berbeda. Semua kartu terpakai bertahan sampai encounter selesai dan ikut tersimpan di save.
 - **Visual Hand:** Kartu di tangan dimiringkan acak 30°–45° ke kiri atau kanan agar terasa organik dan tidak rapi.
 - **Safe Area:** UI harus menghindari *notch*, *punch-hole camera*, gesture bar, dan sudut membulat. Safe area dibaca manual via `window.get_safe_area()`, lalu inset dibagi dengan skala viewport sebelum dipakai oleh layout.
 - **Responsive Viewport:** Skala konten = `min(window_width / 1080, window_height / 1920)`. Lebar/tinggi virtual = ukuran window dibagi skala tersebut, sehingga tidak ada letterbox. Background memakai *cover/crop* (bukan *stretch*) dan ruang vertikal ekstra dipakai di area tengah antara monster dan kartu tangan. UI atas dan bawah di-anchor ke sisi masing-masing.
@@ -144,7 +144,7 @@ main.collection
 ```
 1. Monster muncul di bagian atas layar (semi-3D, menghadap ke bawah)
 2. Pemain draw 5 kartu dari deck (Nyawa)
-3. Pemain mainkan senjata ke slot monster (Drag & Drop ke UI Target 2x2)
+3. Pemain mainkan senjata ke slot monster (Drag & Drop ke UI Target 3x2)
 4. Semua slot tertutup?
    ├─ YA → Monster MATI, ambil reward
    └─ TIDAK → Monster menyerang (bakar kartu)
@@ -162,7 +162,7 @@ main.collection
 - Deck habis = GAME OVER.
 
 ### 5.2 Sistem Slot Monster (Anatomi = Puzzle)
-- Monster punya 3–5 slot wajib (Shield, Legs, Abdomen, dll).
+- Monster punya 4–6 slot wajib (Tier 1: 4, Tier 2: 5, Tier 3/Boss: 6).
 - Slot tertutup = permanen selama encounter.
 - Semua slot tertutup = monster mati.
 
@@ -261,12 +261,12 @@ Setiap kartu di dalam game terdiri dari dua lapisan:
 
 | Nama Monster (STATIS) | Tier | Slot (Anatomi) | Serangan (DINAMIS - ID) |
 | --- | --- | --- | --- |
-| **Stag Beetle** | 2 | Mandibles, Shell, Legs, Head | Bakar 1, Potong 1 |
-| **Praying Mantis** | 2 | Scythe Arms, Neck, Wings, Abdomen | Potong 1, Tusuk 1 |
-| **Bullet Ant** | 2 | Abdomen, Head, Legs, Thorax | Racun (Bakar 1/turn) |
-| **Atlas Moth** | 3 | Wings, Body, Antennae, Head, Legs | Bakar 3, Sisip 1 Larva |
-| **Black Widow** | 3 | Abdomen, Head, Legs, Thorax, Fangs | Racun (Bakar 2/turn) |
-| **Emperor Scorpion** | Boss | Shell, Tail, Legs, Claws, Stinger | Bakar 3, Sengat (Tusuk 3) |
+| **Stag Beetle** | 2 | Mandibles, Shell, Legs, Head, Abdomen | Bakar 1, Potong 1 |
+| **Praying Mantis** | 2 | Scythe Arms, Neck, Wings, Abdomen, Head | Potong 1, Tusuk 1 |
+| **Bullet Ant** | 2 | Abdomen, Head, Legs, Thorax, Mandibles | Racun (Bakar 1/turn) |
+| **Atlas Moth** | 3 | Wings, Body, Antennae, Head, Legs, Abdomen | Bakar 3, Sisip 1 Larva |
+| **Black Widow** | 3 | Abdomen, Head, Legs, Thorax, Fangs, Eyes | Racun (Bakar 2/turn) |
+| **Emperor Scorpion** | Boss | Shell, Tail, Legs, Claws, Stinger, Head | Bakar 3, Sengat (Tusuk 3) |
 
 *(Daftar lengkap 30 monster dapat dilihat di `monsters.md`)*
 
@@ -289,12 +289,15 @@ Visual meja bermain mengadopsi gaya **Tabletop / Board Game fisik** yang dioptim
 │                        (Semi-3D, Besar)                                │
 │                      Menghadap ke Bawah                                │
 │                                                                        │
-│  ┌───────────────────────────┐  ┌───────────────────────────────────┐  │
-│  │ 🛡️ SHIELD      ✓ CLOSED   │  │ 🦵 LEG LEFT      ○ OPEN           │  │
-│  └───────────────────────────┘  └───────────────────────────────────┘  │
-│  ┌───────────────────────────┐  ┌───────────────────────────────────┐  │
-│  │ 🦵 LEG RIGHT   ○ OPEN     │  │ 🫃 ABDOMEN       ○ OPEN           │  │
-│  └───────────────────────────┘  └───────────────────────────────────┘  │
+│  TARGET SLOT                                                           │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                    │
+│  │  PALU BATU   │ │  TAIL        │ │  LEGS        │                    │
+│  │  (tertutup)  │ │ Butuh: Potong│ │ Butuh: Potong│                    │
+│  └──────────────┘ └──────────────┘ └──────────────┘                    │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                    │
+│  │  CLAWS       │ │  STINGER     │ │  HEAD        │                    │
+│  │ Butuh: Tusuk │ │ Butuh: Tusuk │ │ Butuh: Pukul │                    │
+│  └──────────────┘ └──────────────┘ └──────────────┘                    │
 │                                                                        │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │ ⚠ CURRENT THREAT        │ NEXT THREATS                           │  │
@@ -319,7 +322,7 @@ Visual meja bermain mengadopsi gaya **Tabletop / Board Game fisik** yang dioptim
 - **Viewport virtual:** `L.W = window_w / scale`, `L.H = window_h / scale`; desain 1080×1920 tetap menjadi acuan.
 - **Background:** diskalakan dengan `max(L.W / 1080, L.H / 1920)` lalu di-crop oleh layar; overlay mengikuti `L.W × L.H`.
 - **Anchor:** UI atas dan monster mengikuti safe-top; footer, hand, dan slot mengikuti safe-bottom. Sisa ruang vertikal diletakkan di tengah, bukan merenggangkan tombol atau mengecilkan slot.
-- **Slot:** ukuran `490×120` tidak boleh mengecil; boss 5 slot memakai baris ketiga tambahan ke atas.
+- **Slot:** kartu target berukuran `220×328` (rasio 260:388) dalam grid 3×2, maksimal 6 slot; ukuran menyesuaikan safe area bila perlu.
 - **Resize:** layout dihitung ulang saat `WINDOW_EVENT_RESIZED` atau `WINDOW_EVENT_FOCUS_GAINED`, lalu modal yang sedang terbuka dibuka kembali.
 
 ---
@@ -368,7 +371,7 @@ Visual meja bermain mengadopsi gaya **Tabletop / Board Game fisik** yang dioptim
 | --- | --- |
 | Sistem Deck = Nyawa | Wajib |
 | Monster Semi-3D (Layout Portrait) | Wajib |
-| UI Tabletop (2x2 Grid, Threat Timeline, Hand Overlap) | Wajib |
+| UI Tabletop (3x2 Grid, Threat Timeline, Hand Overlap) | Wajib |
 | 36 Kartu Statis (Senjata + Utility) | Wajib |
 | 6 Monster (MVP) | Wajib |
 | **Sistem Multibahasa (Efek & UI ID/EN)** | **Wajib** |
@@ -383,7 +386,7 @@ Visual meja bermain mengadopsi gaya **Tabletop / Board Game fisik** yang dioptim
 | Monster terlalu menutupi UI | Informasi terhalang | Gunakan Z-Order; UI Nama & Tombol di lapisan depan. |
 | Kartu Hand overlap terlalu rapat | Sulit di-drag di HP | Beri *hitbox* yang tepat saat kartu di-tap/di-drag. |
 | Teks efek terpotong akibat bahasa | UI berantakan | Gunakan fitur *text wrap* (word wrap) di GUI Defold. |
-| Layar HP terlalu kecil (Portrait) | Target Slot 2x2 sesak | Gunakan layout *full-width* dan kurangi padding. |
+| Layar HP terlalu kecil (Portrait) | Target Slot 3x2 sesak | Gunakan layout *full-width* dan kurangi padding. |
 
 ---
 

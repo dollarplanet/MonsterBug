@@ -196,13 +196,15 @@ local function test_run_progression()
 	run.used_monsters = {}
 	run_mod.pick_monster(run)
 	assert(run.monster_id == "EmperorScorpion", "final encounter is not the boss")
-	assert(#monsters.EmperorScorpion.slots == 5, "boss does not have 5 slots")
+	assert(#monsters.EmperorScorpion.slots == 6, "boss does not have 6 slots")
 	for _, id in ipairs(monsters.order) do
 		local def = monsters[id]
-		if def.tier == 2 and not def.boss then
-			assert(#def.slots == 4, id .. " tier 2 does not have 4 slots")
-		elseif def.tier == 3 and not def.boss then
-			assert(#def.slots == 5, id .. " tier 3 does not have 5 slots")
+		if def.tier == 1 then
+			assert(#def.slots == 4, id .. " tier 1 does not have 4 slots")
+		elseif def.tier == 2 then
+			assert(#def.slots == 5, id .. " tier 2 does not have 5 slots")
+		elseif def.tier == 3 then
+			assert(#def.slots == 6, id .. " tier 3 does not have 6 slots")
 		end
 	end
 end
@@ -215,14 +217,33 @@ local function test_old_save_migration()
 end
 
 local function test_slot_layout()
-	for _, count in ipairs({ 3, 4, 5 }) do
+	for count = 1, 6 do
 		local slots = layout.slot_layout(count)
 		assert(#slots.positions == count, "slot layout missing positions for " .. count)
 		assert(slots.w and slots.h, "slot layout missing size for " .. count)
 		assert(slots.h == layout.slots.h, "slot height shrunk for " .. count)
+		assert(math.abs(slots.w / slots.h - 260 / 388) < 0.01, "slot ratio changed for " .. count)
 	end
+	local four = layout.slot_layout(4)
+	assert(#four.positions == 4, "four slots missing positions")
+	for i = 2, 4 do
+		assert(four.positions[i].y == four.positions[1].y, "four slots are not on one row")
+		assert(four.positions[i].x > four.positions[i - 1].x, "four slots do not fit horizontally")
+	end
+
 	local five = layout.slot_layout(5)
-	assert(five.label_y > five.positions[1].y + five.h, "boss label overlaps top slot row")
+	assert(#five.positions == 5, "five slots missing positions")
+	assert(five.positions[5].y > five.positions[4].y, "fifth slot is not on the upper row")
+	assert(five.positions[5].x == four.positions[4].x, "fifth slot is not at the far right")
+
+	local six = layout.slot_layout(6)
+	assert(#layout.slot_layout(7).positions == 6, "slot layout exceeds 6")
+	assert(six.label_y > six.positions[5].y + six.h, "label overlaps top slot row")
+	assert(six.positions[1].x ~= six.positions[2].x, "grid columns collapsed")
+	assert(six.positions[1].y ~= six.positions[5].y, "grid rows collapsed")
+	assert(six.positions[5].x == four.positions[4].x, "fifth slot is not at the far right")
+	assert(six.positions[6].x == four.positions[1].x, "sixth slot is not at the far left")
+	assert(six.positions[5].y == six.positions[6].y, "upper row slots are not aligned")
 end
 
 local function test_layout_viewport()
@@ -236,7 +257,7 @@ local function test_layout_viewport()
 	near(layout.H, 1920)
 	near(layout.hand.left, 40)
 	near(layout.hand.right, 1040)
-	assert(layout.slot_layout(5).h == 120, "slot height changed at design size")
+	assert(layout.slot_layout(5).h == 328, "slot height changed at design size")
 
 	layout.configure(1080, 2400, {})
 	near(layout.scale, 1)
@@ -259,7 +280,7 @@ local function test_layout_viewport()
 	near(layout.W, 1200)
 	near(layout.H, 1920)
 	near(layout.ox, 60)
-	near(layout.slots.positions[1].x, 90)
+	near(layout.slots.positions[1].x, 124)
 	near(layout.threat.w, 1140)
 	near(layout.footer.health.x, 530)
 
@@ -276,18 +297,18 @@ local function test_layout_viewport()
 	near(layout.safe.bottom, 48)
 	near(layout.top.name.y, 2128)
 	near(layout.monster.top, 2128)
-	near(layout.slots.positions[1].y, 1126)
+	near(layout.slots.positions[1].y, 1276)
 	local boss_layout = layout.slot_layout(5)
-	near(boss_layout.positions[1].y, 1266)
-	near(boss_layout.positions[5].y, 986)
-	near(boss_layout.label_y, 1422)
+	near(boss_layout.positions[1].y, 928)
+	near(boss_layout.positions[5].y, 1276)
+	near(boss_layout.label_y, 1640)
 	near(layout.hand.y, 220)
 	near(layout.threat.y, 736)
 	near(layout.threat.y + layout.threat.h, 908)
 	near(layout.monster_cards.y, 1990)
 	near(layout.card_preview.image.cy, 1250)
-	assert(layout.threat.y + layout.threat.h <= boss_layout.positions[5].y, "threat overlaps bottom slot row")
-	assert(layout.hand.label_y <= boss_layout.positions[5].y, "slots overlap hand")
+	assert(layout.threat.y + layout.threat.h <= boss_layout.positions[1].y, "threat overlaps bottom slot row")
+	assert(layout.hand.label_y <= boss_layout.positions[1].y, "slots overlap hand")
 
 	layout.reset()
 end
@@ -621,6 +642,26 @@ local function suite(runs)
 	end
 end
 
+local function test_weapon_duplicate()
+	local run = state.new(116)
+	reset_piles(run)
+	local c = combat.new(run, "StagBeetle")
+
+	local hammer = add_inst(run, "WarHammer", "hand")
+	c.actions = 3
+	local ok = combat.play(run, c, hammer.uid, 1)
+	assert(ok, "multi-slot weapon play failed")
+	assert(c.slots[1].weapon and c.slots[1].weapon.card == "WarHammer", "first affected slot mark missing")
+	assert(c.slots[2].weapon and c.slots[2].weapon.card == "WarHammer", "second affected slot mark missing")
+	assert(c.slots[1].weapon.angle == c.slots[2].weapon.angle, "duplicated weapon angles differ")
+	assert(c.slots[3].weapon == nil, "unaffected slot received a weapon mark")
+	assert(#c.monster_cards == 0, "affected weapon was placed next to the monster")
+
+	local loaded = combat.deserialize(combat.serialize(c))
+	assert(loaded and loaded.slots[2].weapon and loaded.slots[2].weapon.card == "WarHammer",
+		"duplicated weapon mark lost after save")
+end
+
 local function test_weapon_marks()
 	local run = state.new(115)
 	reset_piles(run)
@@ -645,13 +686,13 @@ local function test_weapon_marks()
 	c.actions = 3
 	ok = combat.play(run, c, sledge.uid, nil)
 	assert(ok, "untargeted weapon play failed")
-	assert(#c.monster_cards == 2 and c.monster_cards[2].card == "GiantSledge", "untargeted weapon mark missing")
+	assert(c.slots[2].weapon and c.slots[2].weapon.card == "GiantSledge", "affected shield mark missing")
 
 	local molotov = add_inst(run, "MolotovCocktail", "hand")
 	c.actions = 3
 	ok = combat.play(run, c, molotov.uid, nil)
 	assert(ok, "Molotov play failed")
-	assert(#c.monster_cards == 3 and c.monster_cards[3].card == "MolotovCocktail", "Molotov mark missing")
+	assert(#c.monster_cards == 2 and c.monster_cards[2].card == "MolotovCocktail", "Molotov mark missing")
 
 	local seen = {}
 	for _, mark in ipairs(c.monster_cards) do
@@ -663,7 +704,9 @@ local function test_weapon_marks()
 	local loaded = combat.deserialize(combat.serialize(c))
 	assert(loaded and loaded.slots[1].weapon and loaded.slots[1].weapon.card == "StoneHammer",
 		"target mark lost after save")
-	assert(#loaded.monster_cards == 3, "monster marks lost after save")
+	assert(loaded.slots[2].weapon and loaded.slots[2].weapon.card == "GiantSledge",
+		"affected shield mark lost after save")
+	assert(#loaded.monster_cards == 2, "monster marks lost after save")
 	for i, mark in ipairs(c.monster_cards) do
 		assert(loaded.monster_cards[i].card == mark.card, "monster mark card mismatch after save")
 		assert(loaded.monster_cards[i].angle == mark.angle, "monster mark angle mismatch after save")
@@ -688,6 +731,7 @@ local function run_tests()
 		{ "layout_viewport", test_layout_viewport },
 		{ "i18n_encounters", test_i18n_encounters },
 		{ "molotov_no_junk", test_molotov_no_junk },
+		{ "weapon_duplicate", test_weapon_duplicate },
 		{ "weapon_marks", test_weapon_marks },
 		{ "threat_cycle", test_threat_cycle },
 	}

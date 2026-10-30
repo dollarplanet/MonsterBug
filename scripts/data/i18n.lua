@@ -157,6 +157,10 @@ Larva, Twig, Dry Leaf, dan Poison mengotori deck. Buang dengan reward atau kartu
 			Pincers = "Capit",
 			Proboscis = "Probosis",
 			["Abdomen/Stinger"] = "Perut/Sengat",
+			Thorax = "Dada",
+			Claws = "Cakar",
+			Fangs = "Taring",
+			Stinger = "Sengat",
 		},
 	},
 	en = {
@@ -317,6 +321,10 @@ Larva, Twig, Dry Leaf and Poison clog your deck. Remove them through rewards or 
 			Pincers = "Pincers",
 			Proboscis = "Proboscis",
 			["Abdomen/Stinger"] = "Abdomen/Stinger",
+			Thorax = "Thorax",
+			Claws = "Claws",
+			Fangs = "Fangs",
+			Stinger = "Stinger",
 		},
 	},
 }
